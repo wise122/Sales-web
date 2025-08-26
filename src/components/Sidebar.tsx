@@ -1,174 +1,126 @@
+import React, { useState } from "react";
 import {
-    Box,
-    VStack,
-    Text,
-    Icon,
-    Divider,
-    Collapse,
-    HStack,
-    Badge,
-    Button,
-  } from "@chakra-ui/react";
-  import {
-    FiPackage,
-    FiUsers,
-    FiMapPin,
-    FiPercent,
-    FiGift,
-    FiChevronDown,
-    FiChevronUp,
-    FiLogOut,
-  } from "react-icons/fi";
-  import { IconType } from "react-icons";
-  import { useLocation, useNavigate } from "react-router-dom";
-  import React, { useState } from "react";
-  
-  const menuItems: {
-    label: string;
-    icon: IconType;
-    path?: string;
-    subMenu?: { label: string; path: string }[];
-  }[] = [
-    { label: "Produk", icon: FiPackage, path: "/produk" },
-    { label: "Master Stok", icon: FiPackage, path: "/stok" },
-    {
-      label: "Data Karyawan",
-      icon: FiUsers,
-      subMenu: [
-        { label: "SALES", path: "/sales" },
-        { label: "MANAGEMENT", path: "/management" },
-        { label: "ADMIN", path: "/admin" },
-      ],
-    },
-    {
-      label: "Data Toko",
-      icon: FiMapPin,
-      subMenu: [
-        { label: "Agent", path: "/toko/agent" },
-        { label: "Wholesaler", path: "/toko/wholesale" },
-        { label: "Retail", path: "/toko/retail" },
-      ],
-    },
-    { label: "Set Discount", icon: FiPercent, path: "/set-discount" },
-    { label: "Set Bonus", icon: FiGift, path: "/set-bonus" },
-  ];
-  
-  export default function Sidebar() {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
-  
-    const handleLogout = () => {
-      // Hapus token/session
-      localStorage.removeItem("accessToken");
-      // atau sessionStorage.clear()
-      navigate("/login");
-    };
-  
-    return (
-      <Box
-        w="240px"
-        bg="white"
-        p="4"
-        borderRight="1px"
-        borderColor="gray.200"
-        shadow="sm"
-        h="100vh"
-        display="flex"
-        flexDirection="column"
-        justifyContent="space-between"
+  Box,
+  VStack,
+  Text,
+  Icon,
+  Divider,
+  Collapse,
+  HStack,
+  Badge,
+  Button,
+} from "@chakra-ui/react";
+import {
+  FiPackage,
+  FiUsers,
+  FiMapPin,
+  FiPercent,
+  FiGift,
+  FiChevronDown,
+  FiChevronUp,
+  FiLogOut,
+} from "react-icons/fi";
+import { IconType } from "react-icons";
+
+interface MenuItem {
+  label: string;
+  icon: IconType;
+  path?: string;
+  children?: MenuItem[];
+}
+
+const menuItems: MenuItem[] = [
+  { label: "Produk", icon: FiPackage, path: "/produk" },
+  { label: "User", icon: FiUsers, path: "/users" },
+  { label: "Outlet", icon: FiMapPin, path: "/outlets" },
+  { label: "Promo", icon: FiPercent, path: "/promo" },
+  {
+    label: "Gift",
+    icon: FiGift,
+    children: [
+      { label: "Voucher", icon: FiGift, path: "/gift/voucher" },
+      { label: "Hadiah", icon: FiGift, path: "/gift/hadiah" },
+    ],
+  },
+];
+
+export default function Sidebar() {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const toggleMenu = (label: string) => {
+    setOpenMenu(openMenu === label ? null : label);
+  };
+
+  return (
+    <Box
+      w="250px"
+      h="100vh"
+      bg="gray.800"
+      color="white"
+      p={4}
+      display="flex"
+      flexDirection="column"
+      justifyContent="space-between"
+    >
+      {/* Menu utama */}
+      <VStack align="stretch" spacing={2}>
+        {menuItems.map((item) => (
+          <Box key={item.label}>
+            <HStack
+              p={2}
+              borderRadius="md"
+              _hover={{ bg: "gray.700", cursor: "pointer" }}
+              onClick={() =>
+                item.children ? toggleMenu(item.label) : console.log(item.path)
+              }
+              justify="space-between"
+            >
+              <HStack>
+                <Icon as={item.icon} boxSize={5} />
+                <Text>{item.label}</Text>
+              </HStack>
+              {item.children && (
+                <Icon
+                  as={openMenu === item.label ? FiChevronUp : FiChevronDown}
+                />
+              )}
+            </HStack>
+
+            {/* Submenu */}
+            {item.children && (
+              <Collapse in={openMenu === item.label} animateOpacity>
+                <VStack pl={8} align="stretch" spacing={1}>
+                  {item.children.map((child) => (
+                    <HStack
+                      key={child.label}
+                      p={2}
+                      borderRadius="md"
+                      _hover={{ bg: "gray.700", cursor: "pointer" }}
+                      onClick={() => console.log(child.path)}
+                    >
+                      <Icon as={child.icon} boxSize={4} />
+                      <Text fontSize="sm">{child.label}</Text>
+                      <Badge colorScheme="green">New</Badge>
+                    </HStack>
+                  ))}
+                </VStack>
+              </Collapse>
+            )}
+          </Box>
+        ))}
+      </VStack>
+
+      <Divider my={4} />
+
+      {/* Tombol Logout */}
+      <Button
+        variant="ghost"
+        colorScheme="red"
+        justifyContent="flex-start"
+        leftIcon={<Icon as={FiLogOut} />}
       >
-        <Box>
-          <Text fontSize="2xl" fontWeight="bold" mb="6" textAlign="center">
-            Pusantara
-          </Text>
-  
-          <VStack spacing="2" align="stretch">
-            {menuItems.map((item) => {
-              const isActive =
-                item.path && location.pathname === item.path
-                  ? true
-                  : item.subMenu?.some((sub) => sub.path === location.pathname);
-  
-              const hasSubMenu = !!item.subMenu;
-  
-              return (
-                <Box key={item.label}>
-                  <HStack
-                    p="3"
-                    borderRadius="md"
-                    cursor="pointer"
-                    bg={isActive ? "blue.100" : "transparent"}
-                    color={isActive ? "blue.600" : "gray.800"}
-                    _hover={{ bg: isActive ? "blue.200" : "gray.100" }}
-                    onClick={() => {
-                      if (hasSubMenu) {
-                        setOpenSubMenu(openSubMenu === item.label ? null : item.label);
-                      } else if (item.path) {
-                        navigate(item.path);
-                      }
-                    }}
-                    transition="all 0.2s"
-                  >
-                    <Icon as={item.icon as React.ElementType} boxSize={5} />
-                    <Text fontWeight={isActive ? "bold" : "medium"} flex="1">
-                      {item.label}
-                    </Text>
-                    {hasSubMenu && (
-                      <Icon
-                        as={openSubMenu === item.label ? FiChevronUp : FiChevronDown}
-                      />
-                    )}
-                  </HStack>
-  
-                  {hasSubMenu && (
-                    <Collapse in={openSubMenu === item.label} animateOpacity>
-                      <VStack spacing="1" align="stretch" pl="8" mt="1">
-                        {item.subMenu!.map((sub) => {
-                          const isSubActive = location.pathname === sub.path;
-                          return (
-                            <HStack
-                              key={sub.label}
-                              p="2"
-                              borderRadius="md"
-                              cursor="pointer"
-                              bg={isSubActive ? "blue.50" : "transparent"}
-                              _hover={{ bg: "blue.100" }}
-                              onClick={() => navigate(sub.path)}
-                              transition="all 0.2s"
-                            >
-                              <Text fontSize="sm" fontWeight="medium">
-                                {sub.label}
-                              </Text>
-                            </HStack>
-                          );
-                        })}
-                      </VStack>
-                    </Collapse>
-                  )}
-                </Box>
-              );
-            })}
-          </VStack>
-        </Box>
-  
-        {/* Logout button */}
-        <Box>
-          <Divider my="4" />
-          <Button
-            w="full"
-            leftIcon={<FiLogOut />}
-            colorScheme="red"
-            variant="outline"
-            onClick={handleLogout}
-          >
-            Logout
-          </Button>
-          <Text fontSize="xs" color="gray.500" textAlign="center" mt="4">
-            © 2025 Pusantara
-          </Text>
-        </Box>
-      </Box>
-    );
-  }
-  
+        Logout
+      </Button>
+    </Box>
+  );
+}
