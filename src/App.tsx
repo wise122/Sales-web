@@ -1,4 +1,4 @@
-import React from "react";
+import React, { JSX } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ChakraProvider, Spinner, Flex } from "@chakra-ui/react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
