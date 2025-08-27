@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
 const api = axios.create({
-  baseURL: "https://dev.dahliyatrans.com/api/proxy", // ganti sesuai API kamu
+  baseURL: "https://dev.dahliyatrans.com/api", // ganti sesuai API kamu
   withCredentials: false, // kalau pakai cookie JWT baru true
 });
 
