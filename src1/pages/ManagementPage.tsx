@@ -67,8 +67,8 @@ export default function ManagementPage() {
     setLoading(true);
     try {
       const [usersRes, branchesRes] = await Promise.all([
-        api.get<User[]>("/users"),
-        api.get<Branch[]>("/cabang"),
+        api.get<User[]>("/proxy/users"),
+        api.get<Branch[]>("/proxy/cabang"),
       ]);
       // filter khusus Management
       setUsers(usersRes.data.filter((u) => u.segment === "Management"));
@@ -92,7 +92,7 @@ export default function ManagementPage() {
     }
 
     try {
-      await api.post("/users", {
+      await api.post("/proxy/users", {
         user_id,
         name,
         password,
@@ -125,7 +125,7 @@ export default function ManagementPage() {
     }
 
     try {
-      await api.put(`/users/${editingUser.id}`, {
+      await api.put(`/proxy/users/${editingUser.id}`, {
         user_id,
         name,
         password,
@@ -146,7 +146,7 @@ export default function ManagementPage() {
   const handleDeleteManagement = async (id: number) => {
     if (!confirm("Yakin ingin menghapus management ini?")) return;
     try {
-      await api.delete(`/users/${id}`);
+      await api.delete(`/proxy/users/${id}`);
       toast({ title: "Management berhasil dihapus", status: "success", duration: 3000 });
       fetchData();
     } catch (err) {

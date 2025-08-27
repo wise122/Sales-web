@@ -34,7 +34,7 @@ const ProductsPage: React.FC = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await api.get<Product[]>("/products", {
+      const res = await api.get<Product[]>("/proxy/products", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },

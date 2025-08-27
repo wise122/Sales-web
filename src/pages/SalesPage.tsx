@@ -68,8 +68,8 @@ export default function SalesPage() {
     setLoading(true);
     try {
       const [usersRes, branchesRes] = await Promise.all([
-        api.get<User[]>("/proxy/users"),
-        api.get<Branch[]>("/proxy/cabang"),
+        api.get<User[]>("/users"),
+        api.get<Branch[]>("/cabang"),
       ]);
       // filter hanya Retail, Agent, Wholesale
       const filteredUsers = usersRes.data.filter((u) =>
@@ -96,7 +96,7 @@ export default function SalesPage() {
     }
 
     try {
-      await api.post("/proxy/users", { user_id, name, password, segment, branch_id });
+      await api.post("/users", { user_id, name, password, segment, branch_id });
       toast({ title: "Sales berhasil ditambahkan", status: "success", duration: 3000 });
       onClose();
       resetForm();
@@ -124,7 +124,7 @@ export default function SalesPage() {
     }
 
     try {
-      await api.put(`/proxy/users/${editingUser.id}`, { user_id, name, password, segment, branch_id });
+      await api.put(`/users/${editingUser.id}`, { user_id, name, password, segment, branch_id });
       toast({ title: "Sales berhasil diupdate", status: "success", duration: 3000 });
       onClose();
       setEditingUser(null);
@@ -139,7 +139,7 @@ export default function SalesPage() {
   const handleDeleteSales = async (id: number) => {
     if (!confirm("Yakin ingin menghapus sales ini?")) return;
     try {
-      await api.delete(`/proxy/users/${id}`);
+      await api.delete(`/users/${id}`);
       toast({ title: "Sales berhasil dihapus", status: "success", duration: 3000 });
       fetchData();
     } catch (err) {

@@ -1,4 +1,4 @@
-// src/pages/OutletsAgentPage.tsx
+// src/pages/OutletsWholesalePage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -46,7 +46,7 @@ interface Branch {
   branch_name: string;
 }
 
-export default function OutletsAgentPage() {
+export default function OutletsWholesalePage() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +59,7 @@ export default function OutletsAgentPage() {
   const [store_name, setStoreName] = useState("");
   const [owner_name, setOwnerName] = useState("");
   const [branch, setBranch] = useState("");
-  const [segment, setSegment] = useState("Agent");
+  const [segment, setSegment] = useState("Wholesale");
 
   // Edit state
   const [editingOutlet, setEditingOutlet] = useState<Outlet | null>(null);
@@ -67,14 +67,14 @@ export default function OutletsAgentPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const resOutlets = await api.get<Outlet[]>("/outlets");
-      const agentOutlets = resOutlets.data.filter(
-        (o) => o.segment?.toLowerCase() === "agent"
+      const resOutlets = await api.get<Outlet[]>("/proxy/outlets");
+      const wholesaleOutlets = resOutlets.data.filter(
+        (o) => o.segment?.toLowerCase() === "wholesale"
       );
-      setOutlets(agentOutlets);
+      setOutlets(wholesaleOutlets);
 
       setBranchLoading(true);
-      const resBranches = await api.get("/cabang");
+      const resBranches = await api.get("/proxy/cabang");
       const dataBranches: Branch[] = Array.isArray(resBranches.data)
         ? resBranches.data
         : resBranches.data?.data || [];
@@ -99,7 +99,7 @@ export default function OutletsAgentPage() {
     }
 
     try {
-      await api.post("/outlets", { store_name, owner_name, branch, segment });
+      await api.post("/proxy/outlets", { store_name, owner_name, branch, segment });
       toast({ title: "Outlet berhasil ditambahkan", status: "success", duration: 3000 });
       onClose();
       resetForm();
@@ -126,7 +126,7 @@ export default function OutletsAgentPage() {
     }
 
     try {
-      await api.put(`/outlets/${editingOutlet.id}`, { store_name, owner_name, branch, segment });
+      await api.put(`/proxy/outlets/${editingOutlet.id}`, { store_name, owner_name, branch, segment });
       toast({ title: "Outlet berhasil diupdate", status: "success", duration: 3000 });
       onClose();
       setEditingOutlet(null);
@@ -141,7 +141,7 @@ export default function OutletsAgentPage() {
   const handleDeleteOutlet = async (id: number) => {
     if (!confirm("Yakin ingin menghapus outlet ini?")) return;
     try {
-      await api.delete(`/outlets/${id}`);
+      await api.delete(`/proxy/outlets/${id}`);
       toast({ title: "Outlet berhasil dihapus", status: "success", duration: 3000 });
       fetchData();
     } catch (err) {
@@ -154,7 +154,7 @@ export default function OutletsAgentPage() {
     setStoreName("");
     setOwnerName("");
     setBranch("");
-    setSegment("Agent");
+    setSegment("Wholesale");
   };
 
   if (loading)
@@ -168,7 +168,7 @@ export default function OutletsAgentPage() {
     <Box p="6">
       <VStack spacing="4" align="stretch">
         <HStack justifyContent="space-between">
-          <Text fontSize="2xl" fontWeight="bold">Data Outlet Agent</Text>
+          <Text fontSize="2xl" fontWeight="bold">Data Outlet Wholesale</Text>
           <Button colorScheme="blue" onClick={() => { resetForm(); setEditingOutlet(null); onOpen(); }}>
             Tambah Outlet
           </Button>

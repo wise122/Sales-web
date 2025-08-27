@@ -45,7 +45,7 @@ interface Branch {
   branch_name: string;
 }
 
-export default function ManagementPage() {
+export default function SalesPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +57,7 @@ export default function ManagementPage() {
   const [user_id, setUserId] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [segment, setSegment] = useState("Retail");
   const [branch_id, setBranchId] = useState<number | null>(null);
 
   // Edit state
@@ -67,11 +68,14 @@ export default function ManagementPage() {
     setLoading(true);
     try {
       const [usersRes, branchesRes] = await Promise.all([
-        api.get<User[]>("/users"),
-        api.get<Branch[]>("/cabang"),
+        api.get<User[]>("/proxy/users"),
+        api.get<Branch[]>("/proxy/cabang"),
       ]);
-      // filter khusus Management
-      setUsers(usersRes.data.filter((u) => u.segment === "Management"));
+      // filter hanya Retail, Agent, Wholesale
+      const filteredUsers = usersRes.data.filter((u) =>
+        ["Retail", "Agent", "Wholesale"].includes(u.segment)
+      );
+      setUsers(filteredUsers);
       setBranches(branchesRes.data);
     } catch (err) {
       console.error(err);
@@ -85,73 +89,62 @@ export default function ManagementPage() {
     fetchData();
   }, []);
 
-  const handleAddManagement = async () => {
+  const handleAddSales = async () => {
     if (!user_id || !name || !password) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
     try {
-      await api.post("/users", {
-        user_id,
-        name,
-        password,
-        segment: "Management",
-        branch_id,
-      });
-      toast({ title: "Management berhasil ditambahkan", status: "success", duration: 3000 });
+      await api.post("/proxy/users", { user_id, name, password, segment, branch_id });
+      toast({ title: "Sales berhasil ditambahkan", status: "success", duration: 3000 });
       onClose();
       resetForm();
       fetchData();
     } catch (err) {
       console.error(err);
-      toast({ title: "Gagal menambahkan management", status: "error", duration: 3000 });
+      toast({ title: "Gagal menambahkan sales", status: "error", duration: 3000 });
     }
   };
 
-  const handleEditManagement = (user: User) => {
+  const handleEditSales = (user: User) => {
     setEditingUser(user);
     setUserId(user.user_id);
     setName(user.name);
-    setPassword(""); // kosongkan password
+    setPassword("");
+    setSegment(user.segment);
     setBranchId(user.branch_id);
     onOpen();
   };
 
-  const handleUpdateManagement = async () => {
+  const handleUpdateSales = async () => {
     if (!editingUser || !user_id || !name) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
     try {
-      await api.put(`/users/${editingUser.id}`, {
-        user_id,
-        name,
-        password,
-        segment: "Management",
-        branch_id,
-      });
-      toast({ title: "Management berhasil diupdate", status: "success", duration: 3000 });
+      await api.put(`/proxy/users/${editingUser.id}`, { user_id, name, password, segment, branch_id });
+      toast({ title: "Sales berhasil diupdate", status: "success", duration: 3000 });
       onClose();
       setEditingUser(null);
       resetForm();
       fetchData();
     } catch (err) {
       console.error(err);
-      toast({ title: "Gagal update management", status: "error", duration: 3000 });
+      toast({ title: "Gagal update sales", status: "error", duration: 3000 });
     }
   };
 
-  const handleDeleteManagement = async (id: number) => {
-    if (!confirm("Yakin ingin menghapus management ini?")) return;
+  const handleDeleteSales = async (id: number) => {
+    if (!confirm("Yakin ingin menghapus sales ini?")) return;
     try {
-      await api.delete(`/users/${id}`);
-      toast({ title: "Management berhasil dihapus", status: "success", duration: 3000 });
+      await api.delete(`/proxy/users/${id}`);
+      toast({ title: "Sales berhasil dihapus", status: "success", duration: 3000 });
       fetchData();
     } catch (err) {
       console.error(err);
-      toast({ title: "Gagal menghapus management", status: "error", duration: 3000 });
+      toast({ title: "Gagal menghapus sales", status: "error", duration: 3000 });
     }
   };
 
@@ -159,6 +152,7 @@ export default function ManagementPage() {
     setUserId("");
     setName("");
     setPassword("");
+    setSegment("Retail");
     setBranchId(null);
   };
 
@@ -173,8 +167,8 @@ export default function ManagementPage() {
     <Box p="6">
       <VStack spacing="4" align="stretch">
         <HStack justifyContent="space-between">
-          <Text fontSize="2xl" fontWeight="bold">Data Management</Text>
-          <Button colorScheme="blue" onClick={() => { resetForm(); setEditingUser(null); onOpen(); }}>Tambah Management</Button>
+          <Text fontSize="2xl" fontWeight="bold">Data Sales</Text>
+          <Button colorScheme="blue" onClick={() => { resetForm(); setEditingUser(null); onOpen(); }}>Tambah Sales</Button>
         </HStack>
 
         <TableContainer border="1px" borderColor="gray.200" borderRadius="md">
@@ -182,7 +176,8 @@ export default function ManagementPage() {
             <Thead bg="blue.50">
               <Tr>
                 <Th>ID Karyawan</Th>
-                <Th>Nama</Th>
+                <Th>Nama Sales</Th>
+                <Th>Segment</Th>
                 <Th>Cabang</Th>
                 <Th>Tanggal Dibuat</Th>
                 <Th>Aksi</Th>
@@ -193,12 +188,13 @@ export default function ManagementPage() {
                 <Tr key={u.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
                   <Td>{u.user_id}</Td>
                   <Td>{u.name}</Td>
+                  <Td>{u.segment}</Td>
                   <Td>{branches.find(b => b.id === u.branch_id)?.branch_name || "-"}</Td>
                   <Td>{new Date(u.created_at).toLocaleDateString()}</Td>
                   <Td>
                     <HStack spacing="2">
-                      <Button size="xs" colorScheme="yellow" onClick={() => handleEditManagement(u)}>Edit</Button>
-                      <Button size="xs" colorScheme="red" onClick={() => handleDeleteManagement(u.id)}>Hapus</Button>
+                      <Button size="xs" colorScheme="yellow" onClick={() => handleEditSales(u)}>Edit</Button>
+                      <Button size="xs" colorScheme="red" onClick={() => handleDeleteSales(u.id)}>Hapus</Button>
                     </HStack>
                   </Td>
                 </Tr>
@@ -208,11 +204,11 @@ export default function ManagementPage() {
         </TableContainer>
       </VStack>
 
-      {/* Modal Tambah/Edit Management */}
+      {/* Modal Tambah/Edit Sales */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{editingUser ? "Edit Management" : "Tambah Management"}</ModalHeader>
+          <ModalHeader>{editingUser ? "Edit Sales" : "Tambah Sales"}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing="4">
@@ -221,17 +217,20 @@ export default function ManagementPage() {
                 <Input value={user_id} onChange={(e) => setUserId(e.target.value)} />
               </FormControl>
               <FormControl>
-                <FormLabel>Nama</FormLabel>
+                <FormLabel>Nama Sales</FormLabel>
                 <Input value={name} onChange={(e) => setName(e.target.value)} />
               </FormControl>
               <FormControl>
                 <FormLabel>Password</FormLabel>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={editingUser ? "Kosongkan jika tidak ingin diubah" : ""}
-                />
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={editingUser ? "Kosongkan jika tidak ingin diubah" : ""} />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Segment</FormLabel>
+                <Select value={segment} onChange={(e) => setSegment(e.target.value)}>
+                  <option value="Retail">Retail</option>
+                  <option value="Agent">Agent</option>
+                  <option value="Wholesale">Wholesale</option>
+                </Select>
               </FormControl>
               <FormControl>
                 <FormLabel>Cabang</FormLabel>
@@ -245,7 +244,7 @@ export default function ManagementPage() {
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" mr={3} onClick={editingUser ? handleUpdateManagement : handleAddManagement}>
+            <Button colorScheme="blue" mr={3} onClick={editingUser ? handleUpdateSales : handleAddSales}>
               {editingUser ? "Update" : "Simpan"}
             </Button>
             <Button variant="ghost" onClick={onClose}>Batal</Button>
