@@ -1,8 +1,8 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
 const api = axios.create({
-  baseURL: "https://sal.notespad.xyz/api", // ganti sesuai API kamu
-  withCredentials: true, // kalau pakai cookie JWT baru true
+  baseURL: "https://dev.dahliyatrans.com/api", // ganti sesuai API kamu
+  withCredentials: false, // kalau pakai cookie JWT baru true
 });
 
 // Interceptor: tambahin Authorization otomatis kecuali login/refresh
