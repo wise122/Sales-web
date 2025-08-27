@@ -49,7 +49,7 @@ const ProductsStockPage: React.FC = () => {
       // tambahkan field editedStock biar tidak hilang data asli
       const dataWithEdited = res.data.map((p) => ({
         ...p,
-        editedStock: p.stock,
+        editedStock: p.stock_akhir,
       }));
       setProducts(dataWithEdited);
     } catch (err) {
@@ -68,8 +68,8 @@ const ProductsStockPage: React.FC = () => {
     setUpdatingId(id);
     try {
       await api.put(
-        `/proxy/products/${id}`,
-        { stock: newStock },
+        `/products/${id}`,
+        { stock_akhir: newStock },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -166,7 +166,7 @@ const ProductsStockPage: React.FC = () => {
                           size="sm"
                           colorScheme="blue"
                           onClick={() =>
-                            handleUpdateStock(p.id, p.editedStock ?? p.stock)
+                            handleUpdateStock(p.id, p.editedStock ?? p.stock_akhir)
                           }
                           isLoading={updatingId === p.id}
                         >
