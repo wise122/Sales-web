@@ -67,14 +67,14 @@ export default function OutletsAgentPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const resOutlets = await api.get<Outlet[]>("/outlets");
+      const resOutlets = await api.get<Outlet[]>("/proxy/outlets");
       const agentOutlets = resOutlets.data.filter(
         (o) => o.segment?.toLowerCase() === "agent"
       );
       setOutlets(agentOutlets);
 
       setBranchLoading(true);
-      const resBranches = await api.get("/cabang");
+      const resBranches = await api.get("/proxy/cabang");
       const dataBranches: Branch[] = Array.isArray(resBranches.data)
         ? resBranches.data
         : resBranches.data?.data || [];
@@ -99,7 +99,7 @@ export default function OutletsAgentPage() {
     }
 
     try {
-      await api.post("/outlets", { store_name, owner_name, branch, segment });
+      await api.post("/proxy/outlets", { store_name, owner_name, branch, segment });
       toast({ title: "Outlet berhasil ditambahkan", status: "success", duration: 3000 });
       onClose();
       resetForm();
@@ -126,7 +126,7 @@ export default function OutletsAgentPage() {
     }
 
     try {
-      await api.put(`/outlets/${editingOutlet.id}`, { store_name, owner_name, branch, segment });
+      await api.put(`/proxy/outlets/${editingOutlet.id}`, { store_name, owner_name, branch, segment });
       toast({ title: "Outlet berhasil diupdate", status: "success", duration: 3000 });
       onClose();
       setEditingOutlet(null);
@@ -141,7 +141,7 @@ export default function OutletsAgentPage() {
   const handleDeleteOutlet = async (id: number) => {
     if (!confirm("Yakin ingin menghapus outlet ini?")) return;
     try {
-      await api.delete(`/outlets/${id}`);
+      await api.delete(`/proxy/outlets/${id}`);
       toast({ title: "Outlet berhasil dihapus", status: "success", duration: 3000 });
       fetchData();
     } catch (err) {

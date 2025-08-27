@@ -40,7 +40,7 @@ const ProductsStockPage: React.FC = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await api.get<Product[]>("/products", {
+      const res = await api.get<Product[]>("/proxy/products", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -68,7 +68,7 @@ const ProductsStockPage: React.FC = () => {
     setUpdatingId(id);
     try {
       await api.put(
-        `/products/${id}`,
+        `/proxy/products/${id}`,
         { stock: newStock },
         {
           headers: {

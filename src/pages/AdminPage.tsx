@@ -60,7 +60,7 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const usersRes = await api.get<User[]>("/users");
+      const usersRes = await api.get<User[]>("/proxy/users");
       // filter hanya Admin & Super Admin
       const filteredUsers = usersRes.data.filter((u) =>
         ["Admin", "Super Admin"].includes(u.segment)
@@ -85,7 +85,7 @@ export default function AdminPage() {
     }
 
     try {
-      await api.post("/users", { user_id, name, password, segment, branch_id: null });
+      await api.post("/proxy/users", { user_id, name, password, segment, branch_id: null });
       toast({ title: "Admin berhasil ditambahkan", status: "success", duration: 3000 });
       onClose();
       resetForm();
@@ -112,7 +112,7 @@ export default function AdminPage() {
     }
 
     try {
-      await api.put(`/users/${editingUser.id}`, { user_id, name, password, segment, branch_id: null });
+      await api.put(`/proxy/users/${editingUser.id}`, { user_id, name, password, segment, branch_id: null });
       toast({ title: "Admin berhasil diupdate", status: "success", duration: 3000 });
       onClose();
       setEditingUser(null);
@@ -127,7 +127,7 @@ export default function AdminPage() {
   const handleDeleteAdmin = async (id: number) => {
     if (!confirm("Yakin ingin menghapus admin ini?")) return;
     try {
-      await api.delete(`/users/${id}`);
+      await api.delete(`/proxy/users/${id}`);
       toast({ title: "Admin berhasil dihapus", status: "success", duration: 3000 });
       fetchData();
     } catch (err) {
