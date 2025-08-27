@@ -39,7 +39,7 @@ const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await api.post("/auth/login", form);
+      const res = await api.post("/proxy/auth/login", form);
       const { user, accessToken, refreshToken, expiresIn } = res.data;
 
       login({ user, accessToken, refreshToken, expiresIn });
