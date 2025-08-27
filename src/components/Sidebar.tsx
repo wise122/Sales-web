@@ -34,29 +34,35 @@ type MenuItem = {
 };
 
 const menuItems: MenuItem[] = [
-  { label: "Produk", icon: FiPackage, path: "/produk" },
-  { label: "Master Stok", icon: FiPackage, path: "/stok" },
-  {
-    label: "Data Karyawan",
-    icon: FiUsers,
-    subMenu: [
-      { label: "SALES", path: "/sales" },
-      { label: "MANAGEMENT", path: "/management" },
-      { label: "ADMIN", path: "/admin" },
-    ],
-  },
-  {
-    label: "Data Toko",
-    icon: FiMapPin,
-    subMenu: [
-      { label: "Agent", path: "/toko/agent" },
-      { label: "Wholesaler", path: "/toko/wholesale" },
-      { label: "Retail", path: "/toko/retail" },
-    ],
-  },
-  { label: "Set Discount", icon: FiPercent, path: "/set-discount" },
-  { label: "Set Bonus", icon: FiGift, path: "/set-bonus" },
-];
+    { label: "Produk", icon: FiPackage, path: "/produk" },
+    { label: "Master Stok", icon: FiPackage, path: "/stok" },
+    {
+      label: "Data Karyawan",
+      icon: FiUsers,
+      subMenu: [
+        { label: "SALES", path: "/sales" },
+        { label: "MANAGEMENT", path: "/management" },
+        { label: "ADMIN", path: "/admin" },
+      ],
+    },
+    {
+      label: "Data Toko",
+      icon: FiMapPin,
+      subMenu: [
+        { label: "Agent", path: "/toko/agent" },
+        { label: "Wholesaler", path: "/toko/wholesale" },
+        { label: "Retail", path: "/toko/retail" },
+      ],
+    },
+    {
+      label: "Cabang",   // ✅ menu baru
+      icon: FiMapPin,
+      path: "/cabang",
+    },
+    { label: "Set Discount", icon: FiPercent, path: "/set-discount" },
+    { label: "Set Bonus", icon: FiGift, path: "/set-bonus" },
+  ];
+  
 
 export default function Sidebar() {
   const location = useLocation();

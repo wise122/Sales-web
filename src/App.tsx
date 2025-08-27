@@ -12,6 +12,7 @@ import ProductStockPage from "./pages/ProductsStockPage";
 import RetailOutletsPage from "./pages/RetailOutletsPage"; 
 import AgentOutletsPage from "./pages/OutletsAgentPage";
 import WholesaleOutletsPage from "./pages/OutletsWholesalePage";
+import BranchesPage from "./pages/BranchesPage";
 import Layout from "./components/Layout";
 
 const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
@@ -99,6 +100,19 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+
+             {/* Route Cabang */}
+             <Route
+              path="/cabang"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <BranchesPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            
 
             {/* Route Admin */}
             <Route
