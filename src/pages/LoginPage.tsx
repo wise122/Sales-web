@@ -37,13 +37,28 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
+  
     try {
       const res = await api.post("/auth/login", form);
       const { user, accessToken, refreshToken, expiresIn } = res.data;
-
+  
+      // 🔒 Validasi hanya Admin
+      if (user.segment !== "Admin") {
+        setError("Hanya Admin yang bisa login");
+        toast({
+          title: "Login ditolak",
+          description: "Akses hanya untuk Admin.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+        setLoading(false);
+        return;
+      }
+  
+      // lanjut login kalau Admin
       login({ user, accessToken, refreshToken, expiresIn });
-
+  
       toast({
         title: "Login berhasil",
         description: `Selamat datang, ${user.name}!`,
@@ -51,7 +66,7 @@ const LoginPage: React.FC = () => {
         duration: 3000,
         isClosable: true,
       });
-
+  
       navigate("/dashboard");
     } catch (err: any) {
       console.error("Login gagal:", err.response?.data || err.message);
@@ -60,6 +75,7 @@ const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <Flex minH="100vh" align="center" justify="center" bg="blue.50">

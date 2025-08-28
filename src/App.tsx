@@ -9,10 +9,13 @@ import ManagementPage from "./pages/ManagementPage";
 import AdminPage from "./pages/AdminPage"; 
 import ProductPage from "./pages/ProductPage";
 import ProductStockPage from "./pages/ProductsStockPage";
+import LaporanPenjualan from "./pages/LaporanPenjualan";
+import LaporanPenjualanDetail from "./pages/LaporanPenjualanDetail";
 import RetailOutletsPage from "./pages/RetailOutletsPage"; 
 import AgentOutletsPage from "./pages/OutletsAgentPage";
 import WholesaleOutletsPage from "./pages/OutletsWholesalePage";
 import BranchesPage from "./pages/BranchesPage";
+import DiskonPage from "./pages/DiscountsPage";
 import Layout from "./components/Layout";
 
 const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
@@ -41,7 +44,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Route dashboard dengan Layout */}
+            {/* Dashboard */}
             <Route
               path="/dashboard"
               element={
@@ -53,7 +56,7 @@ const App: React.FC = () => {
               }
             />
 
-            {/* Route Product */}
+            {/* Produk */}
             <Route
               path="/produk"
               element={
@@ -64,8 +67,17 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-
-            {/* Route Product Stol */}
+            {/* diskon */}
+            <Route
+              path="/diskon"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <DiskonPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/stok"
               element={
@@ -77,7 +89,7 @@ const App: React.FC = () => {
               }
             />
 
-            {/* Route Sales */}
+            {/* Sales */}
             <Route
               path="/sales"
               element={
@@ -89,7 +101,7 @@ const App: React.FC = () => {
               }
             />
 
-            {/* Route Management */}
+            {/* Management */}
             <Route
               path="/management"
               element={
@@ -101,8 +113,8 @@ const App: React.FC = () => {
               }
             />
 
-             {/* Route Cabang */}
-             <Route
+            {/* Cabang */}
+            <Route
               path="/cabang"
               element={
                 <ProtectedRoute>
@@ -112,9 +124,8 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-            
 
-            {/* Route Admin */}
+            {/* Admin */}
             <Route
               path="/admin"
               element={
@@ -126,7 +137,7 @@ const App: React.FC = () => {
               }
             />
 
-            {/* Route RetailOutlet */}
+            {/* Outlets */}
             <Route
               path="/toko/retail"
               element={
@@ -137,8 +148,6 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-
-            {/* Route RetailAgent */}
             <Route
               path="/toko/agent"
               element={
@@ -149,8 +158,6 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-
-            {/* Route RetailWholesale */}
             <Route
               path="/toko/wholesale"
               element={
@@ -162,7 +169,29 @@ const App: React.FC = () => {
               }
             />
 
-            {/* Default route */}
+            {/* 📊 Laporan Penjualan */}
+            <Route
+              path="/laporan-penjualan"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <LaporanPenjualan />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/laporan-penjualan/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <LaporanPenjualanDetail />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Default */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             {/* Catch-all */}

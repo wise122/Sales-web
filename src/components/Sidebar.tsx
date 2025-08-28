@@ -18,6 +18,7 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiLogOut,
+  FiFileText, // ✅ icon laporan
 } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -28,41 +29,52 @@ type SubMenuItem = {
 
 type MenuItem = {
   label: string;
-  icon: React.ElementType;   // ✅ pakai ElementType, bukan IconType
+  icon: React.ElementType;
   path?: string;
   subMenu?: SubMenuItem[];
 };
 
 const menuItems: MenuItem[] = [
-    { label: "Produk", icon: FiPackage, path: "/produk" },
-    { label: "Master Stok", icon: FiPackage, path: "/stok" },
-    {
-      label: "Data Karyawan",
-      icon: FiUsers,
-      subMenu: [
-        { label: "SALES", path: "/sales" },
-        { label: "MANAGEMENT", path: "/management" },
-        { label: "ADMIN", path: "/admin" },
-      ],
-    },
-    {
-      label: "Data Toko",
-      icon: FiMapPin,
-      subMenu: [
-        { label: "Agent", path: "/toko/agent" },
-        { label: "Wholesaler", path: "/toko/wholesale" },
-        { label: "Retail", path: "/toko/retail" },
-      ],
-    },
-    {
-      label: "Cabang",   // ✅ menu baru
-      icon: FiMapPin,
-      path: "/cabang",
-    },
-    { label: "Set Discount", icon: FiPercent, path: "/set-discount" },
-    { label: "Set Bonus", icon: FiGift, path: "/set-bonus" },
-  ];
-  
+  { label: "Produk", icon: FiPackage, path: "/produk" },
+  { label: "Master Stok", icon: FiPackage, path: "/stok" },
+  {
+    label: "Data Karyawan",
+    icon: FiUsers,
+    subMenu: [
+      { label: "SALES", path: "/sales" },
+      { label: "MANAGEMENT", path: "/management" },
+      { label: "ADMIN", path: "/admin" },
+    ],
+  },
+  {
+    label: "Data Toko",
+    icon: FiMapPin,
+    subMenu: [
+      { label: "Agent", path: "/toko/agent" },
+      { label: "Wholesaler", path: "/toko/wholesale" },
+      { label: "Retail", path: "/toko/retail" },
+    ],
+  },
+  {
+    label: "Cabang",
+    icon: FiMapPin,
+    path: "/cabang",
+  },
+  { label: "Set Discount", icon: FiPercent, path: "/diskon" },
+  { label: "Set Bonus", icon: FiGift, path: "/set-bonus" },
+
+  // ✅ Menu baru: Laporan
+  {
+    label: "Laporan",
+    icon: FiFileText,
+    subMenu: [
+      { label: "Penjualan", path: "/laporan-penjualan" },
+      { label: "Stok", path: "/laporan/stok" },
+      { label: "Karyawan", path: "/laporan/karyawan" },
+      { label: "Toko", path: "/laporan/toko" },
+    ],
+  },
+];
 
 export default function Sidebar() {
   const location = useLocation();
@@ -123,7 +135,7 @@ export default function Sidebar() {
                   }}
                   transition="all 0.2s"
                 >
-                  <Icon as={item.icon} boxSize={5} />   {/* ✅ no error now */}
+                  <Icon as={item.icon} boxSize={5} />
                   <Text
                     fontWeight={isActive ? "bold" : "medium"}
                     flex="1"
@@ -133,7 +145,9 @@ export default function Sidebar() {
                   </Text>
                   {hasSubMenu && (
                     <Icon
-                      as={openSubMenu === item.label ? FiChevronUp : FiChevronDown}
+                      as={
+                        openSubMenu === item.label ? FiChevronUp : FiChevronDown
+                      }
                     />
                   )}
                 </HStack>
@@ -155,7 +169,11 @@ export default function Sidebar() {
                             onClick={() => navigate(sub.path)}
                             transition="all 0.2s"
                           >
-                            <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+                            <Text
+                              fontSize="sm"
+                              fontWeight="medium"
+                              noOfLines={1}
+                            >
                               {sub.label}
                             </Text>
                           </HStack>
