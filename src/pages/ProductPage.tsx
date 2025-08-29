@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Heading,
@@ -66,6 +66,9 @@ const ProductsPage: React.FC = () => {
     onClose: onDeleteClose,
   } = useDisclosure();
   const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  // Ref untuk AlertDialog
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   // Form state
   const [formData, setFormData] = useState<Partial<Product>>({});
@@ -226,14 +229,18 @@ const ProductsPage: React.FC = () => {
               <FormLabel>Kode</FormLabel>
               <Input
                 value={formData.code || ""}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, code: e.target.value })
+                }
               />
             </FormControl>
             <FormControl mb={3}>
               <FormLabel>Nama Produk</FormLabel>
               <Input
                 value={formData.name || ""}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
               />
             </FormControl>
             <FormControl mb={3}>
@@ -251,7 +258,10 @@ const ProductsPage: React.FC = () => {
               <NumberInput min={0} value={formData.stock_sales || 0}>
                 <NumberInputField
                   onChange={(e) =>
-                    setFormData({ ...formData, stock_sales: Number(e.target.value) })
+                    setFormData({
+                      ...formData,
+                      stock_sales: Number(e.target.value),
+                    })
                   }
                 />
               </NumberInput>
@@ -261,7 +271,10 @@ const ProductsPage: React.FC = () => {
               <NumberInput min={0} value={formData.price_retail || 0}>
                 <NumberInputField
                   onChange={(e) =>
-                    setFormData({ ...formData, price_retail: Number(e.target.value) })
+                    setFormData({
+                      ...formData,
+                      price_retail: Number(e.target.value),
+                    })
                   }
                 />
               </NumberInput>
@@ -307,7 +320,7 @@ const ProductsPage: React.FC = () => {
       {/* AlertDialog Delete */}
       <AlertDialog
         isOpen={isDeleteOpen}
-        leastDestructiveRef={undefined}
+        leastDestructiveRef={cancelRef}
         onClose={onDeleteClose}
       >
         <AlertDialogOverlay>
@@ -320,7 +333,9 @@ const ProductsPage: React.FC = () => {
               bisa dibatalkan.
             </AlertDialogBody>
             <AlertDialogFooter>
-              <Button onClick={onDeleteClose}>Batal</Button>
+              <Button ref={cancelRef} onClick={onDeleteClose}>
+                Batal
+              </Button>
               <Button colorScheme="red" onClick={handleDelete} ml={3}>
                 Hapus
               </Button>
