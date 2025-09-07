@@ -63,7 +63,8 @@ export default function OutletsAgentPage() {
       const resOutlets = await api.get<Outlet[]>("/outlets");
       let filtered = resOutlets.data.filter((o) => o.segment === "Agent");
       if (user?.branch_id) {
-        filtered = filtered.filter((o) => o.branch_id === user.branch_id);
+        const userBranchId = Number(user.branch_id);
+        filtered = filtered.filter((o) => o.branch_id === userBranchId);
       }
       setOutlets(filtered);
     } catch (err) {

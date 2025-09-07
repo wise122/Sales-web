@@ -60,7 +60,10 @@ export default function OutletsWholesalePage() {
   // Form state
   const [store_name, setStoreName] = useState("");
   const [owner_name, setOwnerName] = useState("");
-  const [branchId, setBranchId] = useState<number | "">("");
+  const [branchId, setBranchId] = useState<number>(
+    user?.branch_id ? Number(user.branch_id) : 0
+  );
+  
   const [segment, setSegment] = useState("Wholesale");
 
   // Edit state
@@ -95,7 +98,7 @@ export default function OutletsWholesalePage() {
 
     // default cabang untuk Admin Cabang
     if (user?.segment === "Admin Cabang" && user.branch_id) {
-      setBranchId(user.branch_id);
+      setBranchId(0)
     }
   }, [user]);
 
@@ -171,9 +174,9 @@ export default function OutletsWholesalePage() {
     setStoreName("");
     setOwnerName("");
     if (user?.segment === "Admin Cabang" && user.branch_id) {
-      setBranchId(user.branch_id);
+      setBranchId(0)
     } else {
-      setBranchId("");
+      setBranchId(0); // ✅ FIX: jangan pakai string, gunakan 0
     }
     setSegment("Wholesale");
   };
@@ -264,7 +267,9 @@ export default function OutletsWholesalePage() {
                   placeholder={branchLoading ? "Memuat cabang..." : "Pilih Cabang"}
                 >
                   {branches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.branch_name}</option>
+                    <option key={b.id} value={b.id}>
+                      {b.branch_name}
+                    </option>
                   ))}
                 </Select>
               </FormControl>
