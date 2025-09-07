@@ -7,7 +7,6 @@ import DashboardPage from "./pages/DashboardPage";
 import SalesPage from "./pages/SalesPage";
 import ManagementPage from "./pages/ManagementPage"; 
 import AdminPage from "./pages/AdminPage"; 
-import AdminCabangPage from "./pages/AdminCabangPage"; 
 import ProductPage from "./pages/ProductPage";
 import ProductStockPage from "./pages/ProductsStockPage";
 import LaporanPenjualan from "./pages/LaporanPenjualan";
@@ -18,8 +17,6 @@ import WholesaleOutletsPage from "./pages/OutletsWholesalePage";
 import BranchesPage from "./pages/BranchesPage";
 import DiskonPage from "./pages/DiscountsPage";
 import Layout from "./components/Layout";
-import AssetsPage from "./pages/AssetsPage";
-import AssetCategoriesPage from "./pages/AssetCategoriesPage";
 
 const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -115,44 +112,6 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-
-            {/* Assets */}
-<Route
-  path="/asset"
-  element={
-    <ProtectedRoute>
-      <Layout>
-        <AssetsPage />
-      </Layout>
-    </ProtectedRoute>
-  }
-/>
-
-{/* Admin Cabang */}
-<Route
-        path="/admin-cabang"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <AdminCabangPage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-    
-
-{/* Asset Categories */}
-<Route
-  path="/kategori-asset"
-  element={
-    <ProtectedRoute>
-      <Layout>
-        <AssetCategoriesPage />
-      </Layout>
-    </ProtectedRoute>
-  }
-/>
-
 
             {/* Cabang */}
             <Route

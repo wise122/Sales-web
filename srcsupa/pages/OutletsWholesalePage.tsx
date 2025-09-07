@@ -1,4 +1,4 @@
-// src/pages/OutletsAgentPage.tsx
+// src/pages/OutletsWholesalePage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -25,26 +25,32 @@ import {
   FormControl,
   FormLabel,
   Input,
+  Select,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
 import api from "../utils/api";
-import { useAuth } from "../context/AuthContext";
 
 interface Outlet {
   id: number;
   store_name: string;
   owner_name: string;
-  branch_id: number;
-  branch_name: string;
+  branch: string;
   segment: string;
   created_at: string;
 }
 
-export default function OutletsAgentPage() {
-  const { user } = useAuth(); // Ambil user dari context
+interface Branch {
+  id: number;
+  branch_code: string;
+  branch_name: string;
+}
+
+export default function OutletsWholesalePage() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [branchLoading, setBranchLoading] = useState(true);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -52,25 +58,33 @@ export default function OutletsAgentPage() {
   // Form state
   const [store_name, setStoreName] = useState("");
   const [owner_name, setOwnerName] = useState("");
+  const [branch, setBranch] = useState("");
+  const [segment, setSegment] = useState("Wholesale");
 
   // Edit state
   const [editingOutlet, setEditingOutlet] = useState<Outlet | null>(null);
-  const segment = "Agent"; // Fixed
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const resOutlets = await api.get<Outlet[]>("/outlets");
-      let filtered = resOutlets.data.filter((o) => o.segment === "Agent");
-      if (user?.branch_id) {
-        filtered = filtered.filter((o) => o.branch_id === user.branch_id);
-      }
-      setOutlets(filtered);
+      const wholesaleOutlets = resOutlets.data.filter(
+        (o) => o.segment?.toLowerCase() === "wholesale"
+      );
+      setOutlets(wholesaleOutlets);
+
+      setBranchLoading(true);
+      const resBranches = await api.get("/cabang");
+      const dataBranches: Branch[] = Array.isArray(resBranches.data)
+        ? resBranches.data
+        : resBranches.data?.data || [];
+      setBranches(dataBranches);
     } catch (err) {
       console.error(err);
       toast({ title: "Gagal mengambil data", status: "error", duration: 3000 });
     } finally {
       setLoading(false);
+      setBranchLoading(false);
     }
   };
 
@@ -78,25 +92,15 @@ export default function OutletsAgentPage() {
     fetchData();
   }, []);
 
-  const resetForm = () => {
-    setStoreName("");
-    setOwnerName("");
-    setEditingOutlet(null);
-  };
-
   const handleAddOutlet = async () => {
-    if (!store_name || !owner_name) {
+    if (!store_name || !owner_name || !branch) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
+
     try {
-      await api.post("/outlets", {
-        store_name,
-        owner_name,
-        branch_id: user?.branch_id,
-        segment,
-      });
-      toast({ title: "Outlet Agent berhasil ditambahkan", status: "success", duration: 3000 });
+      await api.post("/outlets", { store_name, owner_name, branch, segment });
+      toast({ title: "Outlet berhasil ditambahkan", status: "success", duration: 3000 });
       onClose();
       resetForm();
       fetchData();
@@ -110,23 +114,22 @@ export default function OutletsAgentPage() {
     setEditingOutlet(outlet);
     setStoreName(outlet.store_name);
     setOwnerName(outlet.owner_name);
+    setBranch(outlet.branch);
+    setSegment(outlet.segment);
     onOpen();
   };
 
   const handleUpdateOutlet = async () => {
-    if (!editingOutlet || !store_name || !owner_name) {
+    if (!editingOutlet || !store_name || !owner_name || !branch) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
+
     try {
-      await api.put(`/outlets/${editingOutlet.id}`, {
-        store_name,
-        owner_name,
-        branch_id: user?.branch_id,
-        segment,
-      });
-      toast({ title: "Outlet Agent berhasil diupdate", status: "success", duration: 3000 });
+      await api.put(`/outlets/${editingOutlet.id}`, { store_name, owner_name, branch, segment });
+      toast({ title: "Outlet berhasil diupdate", status: "success", duration: 3000 });
       onClose();
+      setEditingOutlet(null);
       resetForm();
       fetchData();
     } catch (err) {
@@ -139,12 +142,19 @@ export default function OutletsAgentPage() {
     if (!confirm("Yakin ingin menghapus outlet ini?")) return;
     try {
       await api.delete(`/outlets/${id}`);
-      toast({ title: "Outlet Agent berhasil dihapus", status: "success", duration: 3000 });
+      toast({ title: "Outlet berhasil dihapus", status: "success", duration: 3000 });
       fetchData();
     } catch (err) {
       console.error(err);
       toast({ title: "Gagal menghapus outlet", status: "error", duration: 3000 });
     }
+  };
+
+  const resetForm = () => {
+    setStoreName("");
+    setOwnerName("");
+    setBranch("");
+    setSegment("Wholesale");
   };
 
   if (loading)
@@ -158,14 +168,8 @@ export default function OutletsAgentPage() {
     <Box p="6">
       <VStack spacing="4" align="stretch">
         <HStack justifyContent="space-between">
-          <Text fontSize="2xl" fontWeight="bold">Data Outlet Agent</Text>
-          <Button
-            colorScheme="blue"
-            onClick={() => {
-              resetForm();
-              onOpen();
-            }}
-          >
+          <Text fontSize="2xl" fontWeight="bold">Data Outlet Wholesale</Text>
+          <Button colorScheme="blue" onClick={() => { resetForm(); setEditingOutlet(null); onOpen(); }}>
             Tambah Outlet
           </Button>
         </HStack>
@@ -187,7 +191,7 @@ export default function OutletsAgentPage() {
                 <Tr key={o.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
                   <Td>{o.store_name}</Td>
                   <Td>{o.owner_name}</Td>
-                  <Td>{user?.branch_name || "—"}</Td>
+                  <Td>{o.branch}</Td>
                   <Td>{o.segment}</Td>
                   <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
                   <Td>
@@ -203,11 +207,11 @@ export default function OutletsAgentPage() {
         </TableContainer>
       </VStack>
 
-      {/* Modal Tambah/Edit */}
+      {/* Modal Tambah/Edit Outlet */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{editingOutlet ? "Edit Outlet Agent" : "Tambah Outlet Agent"}</ModalHeader>
+          <ModalHeader>{editingOutlet ? "Edit Outlet" : "Tambah Outlet"}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing="4">
@@ -221,11 +225,24 @@ export default function OutletsAgentPage() {
               </FormControl>
               <FormControl>
                 <FormLabel>Cabang</FormLabel>
-                <Input value={user?.branch_name || ""} isReadOnly />
+                <Select
+                  value={branch}
+                  onChange={(e) => setBranch(e.target.value)}
+                  isDisabled={branchLoading || branches.length === 0}
+                  placeholder={branchLoading ? "Memuat cabang..." : "Pilih Cabang"}
+                >
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.branch_name}>{b.branch_name}</option>
+                  ))}
+                </Select>
               </FormControl>
               <FormControl>
                 <FormLabel>Segment</FormLabel>
-                <Input value="Agent" isReadOnly />
+                <Select value={segment} onChange={(e) => setSegment(e.target.value)}>
+                  <option value="Retail">Retail</option>
+                  <option value="Agent">Agent</option>
+                  <option value="Wholesale">Wholesale</option>
+                </Select>
               </FormControl>
             </VStack>
           </ModalBody>

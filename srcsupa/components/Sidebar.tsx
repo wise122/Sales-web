@@ -41,10 +41,9 @@ const menuItems: MenuItem[] = [
     label: "Data Karyawan",
     icon: FiUsers,
     subMenu: [
-      { label: "Sales", path: "/sales" },
-      { label: "Management", path: "/management" },
-      { label: "Admin", path: "/admin" },
-      { label: "Admin Cabang", path: "/admin-cabang" },
+      { label: "SALES", path: "/sales" },
+      { label: "MANAGEMENT", path: "/management" },
+      { label: "ADMIN", path: "/admin" },
     ],
   },
   {
@@ -56,30 +55,26 @@ const menuItems: MenuItem[] = [
       { label: "Retail", path: "/toko/retail" },
     ],
   },
-  { label: "Cabang", icon: FiMapPin, path: "/cabang" },
-  { label: "Set Discount", icon: FiPercent, path: "/diskon" },
-  //{ label: "Set Bonus", icon: FiGift, path: "/set-bonus" },
-
-  // ✅ Menu baru Asset/Inventaris
   {
-    label: "Asset/Inventaris",
-    icon: FiPackage,
-    subMenu: [
-      { label: "Asset", path: "/asset" },            // list + crud asset
-      { label: "Kategori Asset", path: "/kategori-asset" }, // crud kategori
-    ],
+    label: "Cabang",
+    icon: FiMapPin,
+    path: "/cabang",
   },
+  { label: "Set Discount", icon: FiPercent, path: "/diskon" },
+  { label: "Set Bonus", icon: FiGift, path: "/set-bonus" },
 
-  // ✅ Menu Laporan
+  // ✅ Menu baru: Laporan
   {
     label: "Laporan",
     icon: FiFileText,
     subMenu: [
       { label: "Penjualan", path: "/laporan-penjualan" },
+      { label: "Stok", path: "/laporan/stok" },
+      { label: "Karyawan", path: "/laporan/karyawan" },
+      { label: "Toko", path: "/laporan/toko" },
     ],
   },
 ];
-
 
 export default function Sidebar() {
   const location = useLocation();

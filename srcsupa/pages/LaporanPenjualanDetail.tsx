@@ -21,25 +21,20 @@ import api from "../utils/api";
 
 type OrderItem = {
   id: number;
-  product_id: number;
-  quantity: number;
+  product_name: string;
+  qty: number;
   price: number;
-  discount_percent: number;
   subtotal: number;
-  products?: { name: string };
 };
 
 type OrderDetail = {
   id: number;
-  outlet_id: number;
-  user_id: number;
+  outlet_name: string;
   payment_method: string;
   cash: number;
   transfer: number;
   grand_total: number;
   created_at: string;
-  outlets?: { id: number; store_name: string; branch: string };
-  users?: { id: number; name: string; user_code: string };
   items: OrderItem[];
 };
 
@@ -52,8 +47,8 @@ export default function LaporanPenjualanDetail() {
   useEffect(() => {
     const fetchOrderDetail = async () => {
       try {
-        const res = await api.get(`/orders/${id}`); // ✅ backend return { order: {...} }
-        setOrder(res.data.order || null);
+        const res = await api.get(`/orders/${id}`); // ✅ API: GET /orders/:id
+        setOrder(res.data || null);
       } catch (err) {
         console.error("Gagal ambil detail order:", err);
       } finally {
@@ -99,9 +94,7 @@ export default function LaporanPenjualanDetail() {
         </Stat>
         <Stat>
           <StatLabel>Outlet</StatLabel>
-          <StatNumber fontSize="md">
-            {order.outlets?.store_name || "-"}
-          </StatNumber>
+          <StatNumber fontSize="md">{order.outlet_name}</StatNumber>
         </Stat>
         <Stat>
           <StatLabel>Metode Bayar</StatLabel>
@@ -140,8 +133,8 @@ export default function LaporanPenjualanDetail() {
           {order.items.length > 0 ? (
             order.items.map((item) => (
               <Tr key={item.id}>
-                <Td>{item.products?.name || "-"}</Td>
-                <Td isNumeric>{item.quantity}</Td>
+                <Td>{item.product_name}</Td>
+                <Td isNumeric>{item.qty}</Td>
                 <Td isNumeric>Rp {item.price.toLocaleString()}</Td>
                 <Td isNumeric fontWeight="bold">
                   Rp {item.subtotal.toLocaleString()}

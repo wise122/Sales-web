@@ -30,12 +30,13 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import api from "../utils/api";
+import { useAuth } from "../context/AuthContext"; // ✅ pakai AuthContext
 
 interface Outlet {
   id: number;
   store_name: string;
   owner_name: string;
-  branch: string;
+  branch_id: number;
   segment: string;
   created_at: string;
 }
@@ -47,6 +48,7 @@ interface Branch {
 }
 
 export default function OutletsWholesalePage() {
+  const { user } = useAuth(); // ✅ ambil user login
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ export default function OutletsWholesalePage() {
   // Form state
   const [store_name, setStoreName] = useState("");
   const [owner_name, setOwnerName] = useState("");
-  const [branch, setBranch] = useState("");
+  const [branchId, setBranchId] = useState<number | "">("");
   const [segment, setSegment] = useState("Wholesale");
 
   // Edit state
@@ -90,16 +92,26 @@ export default function OutletsWholesalePage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+
+    // default cabang untuk Admin Cabang
+    if (user?.segment === "Admin Cabang" && user.branch_id) {
+      setBranchId(user.branch_id);
+    }
+  }, [user]);
 
   const handleAddOutlet = async () => {
-    if (!store_name || !owner_name || !branch) {
+    if (!store_name || !owner_name || !branchId) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
     try {
-      await api.post("/outlets", { store_name, owner_name, branch, segment });
+      await api.post("/outlets", {
+        store_name,
+        owner_name,
+        branch_id: branchId,
+        segment,
+      });
       toast({ title: "Outlet berhasil ditambahkan", status: "success", duration: 3000 });
       onClose();
       resetForm();
@@ -114,19 +126,24 @@ export default function OutletsWholesalePage() {
     setEditingOutlet(outlet);
     setStoreName(outlet.store_name);
     setOwnerName(outlet.owner_name);
-    setBranch(outlet.branch);
+    setBranchId(outlet.branch_id);
     setSegment(outlet.segment);
     onOpen();
   };
 
   const handleUpdateOutlet = async () => {
-    if (!editingOutlet || !store_name || !owner_name || !branch) {
+    if (!editingOutlet || !store_name || !owner_name || !branchId) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
     try {
-      await api.put(`/outlets/${editingOutlet.id}`, { store_name, owner_name, branch, segment });
+      await api.put(`/outlets/${editingOutlet.id}`, {
+        store_name,
+        owner_name,
+        branch_id: branchId,
+        segment,
+      });
       toast({ title: "Outlet berhasil diupdate", status: "success", duration: 3000 });
       onClose();
       setEditingOutlet(null);
@@ -153,7 +170,11 @@ export default function OutletsWholesalePage() {
   const resetForm = () => {
     setStoreName("");
     setOwnerName("");
-    setBranch("");
+    if (user?.segment === "Admin Cabang" && user.branch_id) {
+      setBranchId(user.branch_id);
+    } else {
+      setBranchId("");
+    }
     setSegment("Wholesale");
   };
 
@@ -169,7 +190,14 @@ export default function OutletsWholesalePage() {
       <VStack spacing="4" align="stretch">
         <HStack justifyContent="space-between">
           <Text fontSize="2xl" fontWeight="bold">Data Outlet Wholesale</Text>
-          <Button colorScheme="blue" onClick={() => { resetForm(); setEditingOutlet(null); onOpen(); }}>
+          <Button
+            colorScheme="blue"
+            onClick={() => {
+              resetForm();
+              setEditingOutlet(null);
+              onOpen();
+            }}
+          >
             Tambah Outlet
           </Button>
         </HStack>
@@ -191,7 +219,9 @@ export default function OutletsWholesalePage() {
                 <Tr key={o.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
                   <Td>{o.store_name}</Td>
                   <Td>{o.owner_name}</Td>
-                  <Td>{o.branch}</Td>
+                  <Td>
+                    {branches.find((b) => b.id === o.branch_id)?.branch_name || "—"}
+                  </Td>
                   <Td>{o.segment}</Td>
                   <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
                   <Td>
@@ -226,13 +256,15 @@ export default function OutletsWholesalePage() {
               <FormControl>
                 <FormLabel>Cabang</FormLabel>
                 <Select
-                  value={branch}
-                  onChange={(e) => setBranch(e.target.value)}
-                  isDisabled={branchLoading || branches.length === 0}
+                  value={branchId}
+                  onChange={(e) => setBranchId(Number(e.target.value))}
+                  isDisabled={
+                    branchLoading || branches.length === 0 || user?.segment === "Admin Cabang"
+                  }
                   placeholder={branchLoading ? "Memuat cabang..." : "Pilih Cabang"}
                 >
                   {branches.map((b) => (
-                    <option key={b.id} value={b.branch_name}>{b.branch_name}</option>
+                    <option key={b.id} value={b.id}>{b.branch_name}</option>
                   ))}
                 </Select>
               </FormControl>

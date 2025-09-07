@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
       const { user, accessToken, refreshToken, expiresIn } = res.data;
   
       // 🔒 Validasi hanya Admin
-      if (user.segment !== "Admin" && user.segment !== "Admin Cabang") {
+      if (user.segment !== "Admin") {
         setError("Hanya Admin yang bisa login");
         toast({
           title: "Login ditolak",

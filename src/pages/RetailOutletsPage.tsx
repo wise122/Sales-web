@@ -30,12 +30,14 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import api from "../utils/api";
+import { useAuth } from "../context/AuthContext"; // ✅ pakai AuthContext
 
 interface Outlet {
   id: number;
   store_name: string;
   owner_name: string;
-  branch: string;
+  branch_id: number;
+  branch_name: string;
   segment: string;
   created_at: string;
 }
@@ -47,6 +49,7 @@ interface Branch {
 }
 
 export default function OutletsPage() {
+  const { user } = useAuth(); // ✅ ambil user dari context
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +61,7 @@ export default function OutletsPage() {
   // Form state
   const [store_name, setStoreName] = useState("");
   const [owner_name, setOwnerName] = useState("");
-  const [branch, setBranch] = useState("");
+  const [branch_id, setBranch] = useState<string>("");
   const [segment, setSegment] = useState("Retail");
 
   // Edit state
@@ -87,17 +90,31 @@ export default function OutletsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+
+    // default cabang untuk Admin Cabang
+    if (user?.segment === "Admin Cabang" && user.branch_id) {
+      setBranch(String(user.branch_id));
+    }
+  }, [user]);
 
   const handleAddOutlet = async () => {
-    if (!store_name || !owner_name || !branch) {
+    if (!store_name || !owner_name || !branch_id) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
     try {
-      await api.post("/outlets", { store_name, owner_name, branch, segment });
-      toast({ title: "Outlet berhasil ditambahkan", status: "success", duration: 3000 });
+      await api.post("/outlets", {
+        store_name,
+        owner_name,
+        branch_id: Number(branch_id),
+        segment,
+      });
+      toast({
+        title: "Outlet berhasil ditambahkan",
+        status: "success",
+        duration: 3000,
+      });
       onClose();
       resetForm();
       fetchData();
@@ -111,20 +128,29 @@ export default function OutletsPage() {
     setEditingOutlet(outlet);
     setStoreName(outlet.store_name);
     setOwnerName(outlet.owner_name);
-    setBranch(outlet.branch);
+    setBranch(String(outlet.branch_id));
     setSegment(outlet.segment);
     onOpen();
   };
 
   const handleUpdateOutlet = async () => {
-    if (!editingOutlet || !store_name || !owner_name || !branch) {
+    if (!editingOutlet || !store_name || !owner_name || !branch_id) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
     try {
-      await api.put(`/outlets/${editingOutlet.id}`, { store_name, owner_name, branch, segment });
-      toast({ title: "Outlet berhasil diupdate", status: "success", duration: 3000 });
+      await api.put(`/outlets/${editingOutlet.id}`, {
+        store_name,
+        owner_name,
+        branch_id: Number(branch_id),
+        segment,
+      });
+      toast({
+        title: "Outlet berhasil diupdate",
+        status: "success",
+        duration: 3000,
+      });
       onClose();
       setEditingOutlet(null);
       resetForm();
@@ -139,7 +165,11 @@ export default function OutletsPage() {
     if (!confirm("Yakin ingin menghapus outlet ini?")) return;
     try {
       await api.delete(`/outlets/${id}`);
-      toast({ title: "Outlet berhasil dihapus", status: "success", duration: 3000 });
+      toast({
+        title: "Outlet berhasil dihapus",
+        status: "success",
+        duration: 3000,
+      });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -150,7 +180,11 @@ export default function OutletsPage() {
   const resetForm = () => {
     setStoreName("");
     setOwnerName("");
-    setBranch("");
+    if (user?.segment === "Admin Cabang" && user.branch_id) {
+      setBranch(String(user.branch_id));
+    } else {
+      setBranch("");
+    }
     setSegment("Retail");
   };
 
@@ -165,8 +199,17 @@ export default function OutletsPage() {
     <Box p="6">
       <VStack spacing="4" align="stretch">
         <HStack justifyContent="space-between">
-          <Text fontSize="2xl" fontWeight="bold">Data Outlet</Text>
-          <Button colorScheme="blue" onClick={() => { resetForm(); setEditingOutlet(null); onOpen(); }}>
+          <Text fontSize="2xl" fontWeight="bold">
+            Data Outlet
+          </Text>
+          <Button
+            colorScheme="blue"
+            onClick={() => {
+              resetForm();
+              setEditingOutlet(null);
+              onOpen();
+            }}
+          >
             Tambah Outlet
           </Button>
         </HStack>
@@ -184,21 +227,35 @@ export default function OutletsPage() {
               </Tr>
             </Thead>
             <Tbody>
-              {outlets.map((o) => (
-                <Tr key={o.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
-                  <Td>{o.store_name}</Td>
-                  <Td>{o.owner_name}</Td>
-                  <Td>{o.branch}</Td>
-                  <Td>{o.segment}</Td>
-                  <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
-                  <Td>
-                    <HStack spacing="2">
-                      <Button size="xs" colorScheme="yellow" onClick={() => handleEditOutlet(o)}>Edit</Button>
-                      <Button size="xs" colorScheme="red" onClick={() => handleDeleteOutlet(o.id)}>Hapus</Button>
-                    </HStack>
-                  </Td>
-                </Tr>
-              ))}
+              {outlets
+                .filter((o) => o.segment === "Retail")
+                .map((o) => (
+                  <Tr key={o.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
+                    <Td>{o.store_name}</Td>
+                    <Td>{o.owner_name}</Td>
+                    <Td>{o.branch_name}</Td>
+                    <Td>{o.segment}</Td>
+                    <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
+                    <Td>
+                      <HStack spacing="2">
+                        <Button
+                          size="xs"
+                          colorScheme="yellow"
+                          onClick={() => handleEditOutlet(o)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="xs"
+                          colorScheme="red"
+                          onClick={() => handleDeleteOutlet(o.id)}
+                        >
+                          Hapus
+                        </Button>
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
             </Tbody>
           </Table>
         </TableContainer>
@@ -208,34 +265,53 @@ export default function OutletsPage() {
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{editingOutlet ? "Edit Outlet" : "Tambah Outlet"}</ModalHeader>
+          <ModalHeader>
+            {editingOutlet ? "Edit Outlet" : "Tambah Outlet"}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing="4">
               <FormControl>
                 <FormLabel>Nama Toko</FormLabel>
-                <Input value={store_name} onChange={(e) => setStoreName(e.target.value)} />
+                <Input
+                  value={store_name}
+                  onChange={(e) => setStoreName(e.target.value)}
+                />
               </FormControl>
               <FormControl>
                 <FormLabel>Nama Pemilik</FormLabel>
-                <Input value={owner_name} onChange={(e) => setOwnerName(e.target.value)} />
+                <Input
+                  value={owner_name}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                />
               </FormControl>
               <FormControl>
                 <FormLabel>Cabang</FormLabel>
                 <Select
-                  value={branch}
+                  value={branch_id}
                   onChange={(e) => setBranch(e.target.value)}
-                  isDisabled={branchLoading || branches.length === 0}
-                  placeholder={branchLoading ? "Memuat cabang..." : "Pilih Cabang"}
+                  isDisabled={
+                    branchLoading ||
+                    branches.length === 0 ||
+                    user?.segment === "Admin Cabang"
+                  }
+                  placeholder={
+                    branchLoading ? "Memuat cabang..." : "Pilih Cabang"
+                  }
                 >
                   {branches.map((b) => (
-                    <option key={b.id} value={b.branch_name}>{b.branch_name}</option>
+                    <option key={b.id} value={b.id}>
+                      {b.branch_name}
+                    </option>
                   ))}
                 </Select>
               </FormControl>
               <FormControl>
                 <FormLabel>Segment</FormLabel>
-                <Select value={segment} onChange={(e) => setSegment(e.target.value)}>
+                <Select
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value)}
+                >
                   <option value="Retail">Retail</option>
                   <option value="Agent">Agent</option>
                   <option value="Wholesale">Wholesale</option>
@@ -244,10 +320,16 @@ export default function OutletsPage() {
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" mr={3} onClick={editingOutlet ? handleUpdateOutlet : handleAddOutlet}>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={editingOutlet ? handleUpdateOutlet : handleAddOutlet}
+            >
               {editingOutlet ? "Update" : "Simpan"}
             </Button>
-            <Button variant="ghost" onClick={onClose}>Batal</Button>
+            <Button variant="ghost" onClick={onClose}>
+              Batal
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

@@ -9,6 +9,7 @@ import {
   Th,
   Td,
   Text,
+  VStack,
   Stat,
   StatLabel,
   StatNumber,
@@ -25,20 +26,20 @@ import api from "../utils/api";
 type Order = {
   id: number;
   outlet_id: number;
-  user_id: number;
   payment_method: string;
   cash: number;
   transfer: number;
   grand_total: number;
   created_at: string;
-  outlet_name?: string;
-  sales_name?: string;
+  sales_name: string;
+  outlet_name: string;
 };
 
 type Summary = {
   totalNota: number;
   jumlahOrder: number;
   totalQty: number;
+  totalInsentif?: number;
 };
 
 type Sales = {
@@ -65,9 +66,7 @@ export default function LaporanPenjualan() {
   useEffect(() => {
     const fetchSales = async () => {
       try {
-        console.log("Fetching sales list...");
         const res = await api.get("/users?salesOnly=true");
-        console.log("Sales fetched:", res.data);
         setSalesList(res.data || []);
       } catch (err) {
         console.error("Fetch sales error:", err);
@@ -79,68 +78,30 @@ export default function LaporanPenjualan() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      console.log("Fetching orders with filters:", filters);
-  
-      // build query params
       const params = new URLSearchParams();
       if (filters.sales) params.append("sales", filters.sales);
       if (filters.start) params.append("start", filters.start);
       if (filters.end) params.append("end", filters.end);
       if (filters.month) params.append("month", filters.month);
       if (filters.year) params.append("year", filters.year);
-  
-      console.log("Query params:", params.toString());
-  
-      // ambil data orders, outlets, users bersamaan
-      const [ordersRes, outletsRes, usersRes] = await Promise.all([
+
+      const [ordersRes, summaryRes] = await Promise.all([
         api.get(`/orders?${params.toString()}`),
-        api.get("/outlets"),
-        api.get("/users?salesOnly=true"),
+        api.get(`/orders/summary?${params.toString()}`),
       ]);
-  
-      // pastikan data berbentuk array
-      const fetchedOrders: any[] = Array.isArray(ordersRes.data?.orders)
-        ? ordersRes.data.orders
-        : [];
-      const outlets: any[] = Array.isArray(outletsRes.data) ? outletsRes.data : [];
-      const users: any[] = Array.isArray(usersRes.data) ? usersRes.data : [];
-  
-      console.log("Fetched orders:", fetchedOrders);
-      console.log("Fetched outlets:", outlets);
-      console.log("Fetched users:", users);
-  
-      // mapping outlet_name & sales_name
-      const mappedOrders = fetchedOrders.map((o) => {
-        const outlet = outlets.find((out) => out.id === o.outlet_id);
-        const user = users.find((u) => u.id === o.user_id);
-        return {
-          ...o,
-          outlet_name: outlet?.store_name || "-",
-          sales_name: user?.name || "-",
-        };
-      });
-  
-      // urutkan berdasarkan ID
-      const sortedOrders = mappedOrders.sort((a, b) => a.id - b.id);
+
+      const sortedOrders = (ordersRes.data.orders || []).sort(
+        (a: Order, b: Order) => a.id - b.id
+      );
+
       setOrders(sortedOrders);
-  
-      // hitung summary di frontend
-      const totalNota = sortedOrders.reduce((sum, o) => sum + (o.grand_total || 0), 0);
-      const jumlahOrder = sortedOrders.length;
-      const totalQty = 0; // kalau qty ingin ditampilkan, backend harus kirim order_items
-      setSummary({ totalNota, jumlahOrder, totalQty });
-  
-      console.log("Summary:", { totalNota, jumlahOrder, totalQty });
+      setSummary(summaryRes.data || null);
     } catch (err) {
       console.error("Fetch laporan penjualan error:", err);
-      setOrders([]);
-      setSummary(null);
     } finally {
       setLoading(false);
     }
   };
-  
-  
 
   useEffect(() => {
     fetchOrders();
@@ -262,10 +223,7 @@ export default function LaporanPenjualan() {
                 <Tr
                   key={order.id}
                   _hover={{ bg: "gray.100", cursor: "pointer" }}
-                  onClick={() => {
-                    console.log("Navigating to order ID:", order.id);
-                    navigate(`/laporan-penjualan/${order.id}`);
-                  }}
+                  onClick={() => navigate(`/laporan-penjualan/${order.id}`)}
                 >
                   <Td>{order.id}</Td>
                   <Td>{new Date(order.created_at).toLocaleDateString()}</Td>

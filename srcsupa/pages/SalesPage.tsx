@@ -1,4 +1,3 @@
-// src/pages/SalesPage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -30,7 +29,6 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import api from "../utils/api";
-import { useAuth } from "../context/AuthContext";
 
 interface User {
   id: number;
@@ -48,10 +46,8 @@ interface Branch {
 }
 
 export default function SalesPage() {
-  const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState<number | null>(user?.branch_id ?? null);
   const [loading, setLoading] = useState(true);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -62,21 +58,25 @@ export default function SalesPage() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [segment, setSegment] = useState("Retail");
+  const [branch_id, setBranchId] = useState<number | null>(null);
 
   // Edit state
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
+  // Fetch users & branches
   const fetchData = async () => {
     setLoading(true);
     try {
-      const resUsers = await api.get<User[]>("/users");
-      let filteredUsers = resUsers.data.filter(u =>
+      const [usersRes, branchesRes] = await Promise.all([
+        api.get<User[]>("/users"),
+        api.get<Branch[]>("/cabang"),
+      ]);
+      // filter hanya Retail, Agent, Wholesale
+      const filteredUsers = usersRes.data.filter((u) =>
         ["Retail", "Agent", "Wholesale"].includes(u.segment)
       );
-      if (user?.branch_id) {
-        filteredUsers = filteredUsers.filter(u => u.branch_id === user.branch_id);
-      }
       setUsers(filteredUsers);
+      setBranches(branchesRes.data);
     } catch (err) {
       console.error(err);
       toast({ title: "Gagal mengambil data", status: "error", duration: 3000 });
@@ -85,51 +85,18 @@ export default function SalesPage() {
     }
   };
 
-  const fetchBranches = async () => {
-    try {
-      const res = await api.get<Branch[]>("/cabang");
-      if (user?.segment === "Admin Cabang") {
-        // hanya cabang sendiri
-        const myBranch = res.data.find(b => b.id === user.branch_id);
-        if (myBranch) setBranches([myBranch]);
-      } else {
-        setBranches(res.data);
-      }
-      if (!branchId && res.data.length > 0) setBranchId(res.data[0].id);
-    } catch (err) {
-      console.error(err);
-      toast({ title: "Gagal mengambil data cabang", status: "error", duration: 3000 });
-    }
-  };
-
   useEffect(() => {
     fetchData();
-    fetchBranches();
   }, []);
 
-  const resetForm = () => {
-    setUserId("");
-    setName("");
-    setPassword("");
-    setSegment("Retail");
-    setEditingUser(null);
-    setBranchId(user?.branch_id ?? null);
-  };
-
   const handleAddSales = async () => {
-    if (!user_id || !name || !password || !branchId) {
+    if (!user_id || !name || !password) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
     try {
-      await api.post("/users", {
-        user_id,
-        name,
-        password,
-        segment,
-        branch_id: branchId,
-      });
+      await api.post("/users", { user_id, name, password, segment, branch_id });
       toast({ title: "Sales berhasil ditambahkan", status: "success", duration: 3000 });
       onClose();
       resetForm();
@@ -140,32 +107,27 @@ export default function SalesPage() {
     }
   };
 
-  const handleEditSales = (u: User) => {
-    setEditingUser(u);
-    setUserId(u.user_id);
-    setName(u.name);
+  const handleEditSales = (user: User) => {
+    setEditingUser(user);
+    setUserId(user.user_id);
+    setName(user.name);
     setPassword("");
-    setSegment(u.segment);
-    setBranchId(u.branch_id);
+    setSegment(user.segment);
+    setBranchId(user.branch_id);
     onOpen();
   };
 
   const handleUpdateSales = async () => {
-    if (!editingUser || !user_id || !name || !branchId) {
+    if (!editingUser || !user_id || !name) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
     try {
-      await api.put(`/users/${editingUser.id}`, {
-        user_id,
-        name,
-        password,
-        segment,
-        branch_id: branchId,
-      });
+      await api.put(`/users/${editingUser.id}`, { user_id, name, password, segment, branch_id });
       toast({ title: "Sales berhasil diupdate", status: "success", duration: 3000 });
       onClose();
+      setEditingUser(null);
       resetForm();
       fetchData();
     } catch (err) {
@@ -186,6 +148,14 @@ export default function SalesPage() {
     }
   };
 
+  const resetForm = () => {
+    setUserId("");
+    setName("");
+    setPassword("");
+    setSegment("Retail");
+    setBranchId(null);
+  };
+
   if (loading)
     return (
       <Center h="80vh">
@@ -198,7 +168,7 @@ export default function SalesPage() {
       <VStack spacing="4" align="stretch">
         <HStack justifyContent="space-between">
           <Text fontSize="2xl" fontWeight="bold">Data Sales</Text>
-          <Button colorScheme="blue" onClick={() => { resetForm(); onOpen(); }}>Tambah Sales</Button>
+          <Button colorScheme="blue" onClick={() => { resetForm(); setEditingUser(null); onOpen(); }}>Tambah Sales</Button>
         </HStack>
 
         <TableContainer border="1px" borderColor="gray.200" borderRadius="md">
@@ -214,12 +184,12 @@ export default function SalesPage() {
               </Tr>
             </Thead>
             <Tbody>
-              {users.map(u => (
+              {users.map((u) => (
                 <Tr key={u.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
                   <Td>{u.user_id}</Td>
                   <Td>{u.name}</Td>
                   <Td>{u.segment}</Td>
-                  <Td>{u.branch_name || "-"}</Td>
+                  <Td>{branches.find(b => b.id === u.branch_id)?.branch_name || "-"}</Td>
                   <Td>{new Date(u.created_at).toLocaleDateString()}</Td>
                   <Td>
                     <HStack spacing="2">
@@ -234,7 +204,7 @@ export default function SalesPage() {
         </TableContainer>
       </VStack>
 
-      {/* Modal Tambah/Edit */}
+      {/* Modal Tambah/Edit Sales */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
@@ -244,24 +214,19 @@ export default function SalesPage() {
             <VStack spacing="4">
               <FormControl>
                 <FormLabel>ID Karyawan</FormLabel>
-                <Input value={user_id} onChange={e => setUserId(e.target.value)} />
+                <Input value={user_id} onChange={(e) => setUserId(e.target.value)} />
               </FormControl>
               <FormControl>
                 <FormLabel>Nama Sales</FormLabel>
-                <Input value={name} onChange={e => setName(e.target.value)} />
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
               </FormControl>
               <FormControl>
                 <FormLabel>Password</FormLabel>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder={editingUser ? "Kosongkan jika tidak ingin diubah" : ""}
-                />
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={editingUser ? "Kosongkan jika tidak ingin diubah" : ""} />
               </FormControl>
               <FormControl>
                 <FormLabel>Segment</FormLabel>
-                <Select value={segment} onChange={e => setSegment(e.target.value)}>
+                <Select value={segment} onChange={(e) => setSegment(e.target.value)}>
                   <option value="Retail">Retail</option>
                   <option value="Agent">Agent</option>
                   <option value="Wholesale">Wholesale</option>
@@ -269,12 +234,8 @@ export default function SalesPage() {
               </FormControl>
               <FormControl>
                 <FormLabel>Cabang</FormLabel>
-                <Select
-                  placeholder="Pilih cabang"
-                  value={branchId ?? ""}
-                  onChange={(e) => setBranchId(Number(e.target.value))}
-                  isDisabled={user?.segment === "Admin Cabang"} // readonly jika Admin Cabang
-                >
+                <Select value={branch_id || ""} onChange={(e) => setBranchId(Number(e.target.value) || null)}>
+                  <option value="">Pilih Cabang</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.branch_name}</option>
                   ))}
