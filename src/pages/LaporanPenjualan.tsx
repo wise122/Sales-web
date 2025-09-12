@@ -83,11 +83,12 @@ export default function LaporanPenjualan() {
   
       // build query params
       const params = new URLSearchParams();
-      if (filters.sales) params.append("sales", filters.sales);
-      if (filters.start) params.append("start", filters.start);
-      if (filters.end) params.append("end", filters.end);
-      if (filters.month) params.append("month", filters.month);
-      if (filters.year) params.append("year", filters.year);
+if (filters.sales) params.append("sales_id", filters.sales);   // 👈 ganti
+if (filters.start) params.append("start_date", filters.start); // 👈 ganti
+if (filters.end) params.append("end_date", filters.end);       // 👈 ganti
+if (filters.month) params.append("month", filters.month);
+if (filters.year) params.append("year", filters.year);
+
   
       console.log("Query params:", params.toString());
   
