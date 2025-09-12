@@ -21,6 +21,8 @@ import {
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 type Order = {
   id: number;
@@ -61,6 +63,40 @@ export default function LaporanPenjualan() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+
+  const downloadReport = () => {
+    if (orders.length === 0) {
+      alert("Tidak ada data untuk diunduh");
+      return;
+    }
+  
+    // bikin data array untuk excel
+    const exportData = orders.map((o) => ({
+      ID: o.id,
+      Tanggal: new Date(o.created_at).toLocaleDateString(),
+      Outlet: o.outlet_name,
+      Sales: o.sales_name,
+      "Metode Bayar": o.payment_method,
+      Cash: o.cash,
+      Transfer: o.transfer,
+      "Grand Total": o.grand_total,
+    }));
+  
+    // buat worksheet dan workbook
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
+  
+    // simpan file
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `laporan-penjualan-${Date.now()}.xlsx`);
+  };
   // ambil data sales buat filter
   useEffect(() => {
     const fetchSales = async () => {
@@ -217,6 +253,14 @@ if (filters.year) params.append("year", filters.year);
         >
           Reset
         </Button>
+        <Button
+  colorScheme="green"
+  onClick={downloadReport}
+  isDisabled={orders.length === 0}
+>
+  Download Laporan
+</Button>
+
       </HStack>
 
       {/* Ringkasan */}
