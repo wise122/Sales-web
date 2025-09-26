@@ -39,6 +39,8 @@ interface Outlet {
   branch_id: number;
   branch_name: string;
   segment: string;
+  longitude: string | null;
+  latitude: string | null;
   created_at: string;
 }
 
@@ -63,6 +65,8 @@ export default function OutletsPage() {
   const [owner_name, setOwnerName] = useState("");
   const [branch_id, setBranch] = useState<string>("");
   const [segment, setSegment] = useState("Retail");
+  const [longitude, setLongitude] = useState("");
+  const [latitude, setLatitude] = useState("");
 
   // Edit state
   const [editingOutlet, setEditingOutlet] = useState<Outlet | null>(null);
@@ -109,6 +113,8 @@ export default function OutletsPage() {
         owner_name,
         branch_id: Number(branch_id),
         segment,
+        longitude,
+        latitude,
       });
       toast({
         title: "Outlet berhasil ditambahkan",
@@ -130,6 +136,8 @@ export default function OutletsPage() {
     setOwnerName(outlet.owner_name);
     setBranch(String(outlet.branch_id));
     setSegment(outlet.segment);
+    setLongitude(outlet.longitude || "");
+    setLatitude(outlet.latitude || "");
     onOpen();
   };
 
@@ -145,6 +153,8 @@ export default function OutletsPage() {
         owner_name,
         branch_id: Number(branch_id),
         segment,
+        longitude,
+        latitude,
       });
       toast({
         title: "Outlet berhasil diupdate",
@@ -186,6 +196,8 @@ export default function OutletsPage() {
       setBranch("");
     }
     setSegment("Retail");
+    setLongitude("");
+    setLatitude("");
   };
 
   if (loading)
@@ -215,49 +227,64 @@ export default function OutletsPage() {
         </HStack>
 
         <TableContainer border="1px" borderColor="gray.200" borderRadius="md">
-          <Table variant="simple" size="sm">
-            <Thead bg="blue.50">
-              <Tr>
-                <Th>Nama Toko</Th>
-                <Th>Pemilik</Th>
-                <Th>Cabang</Th>
-                <Th>Segment</Th>
-                <Th>Tanggal Dibuat</Th>
-                <Th>Aksi</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {outlets
-                .filter((o) => o.segment === "Retail")
-                .map((o) => (
-                  <Tr key={o.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
-                    <Td>{o.store_name}</Td>
-                    <Td>{o.owner_name}</Td>
-                    <Td>{o.branch_name}</Td>
-                    <Td>{o.segment}</Td>
-                    <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
-                    <Td>
-                      <HStack spacing="2">
-                        <Button
-                          size="xs"
-                          colorScheme="yellow"
-                          onClick={() => handleEditOutlet(o)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="xs"
-                          colorScheme="red"
-                          onClick={() => handleDeleteOutlet(o.id)}
-                        >
-                          Hapus
-                        </Button>
-                      </HStack>
-                    </Td>
-                  </Tr>
-                ))}
-            </Tbody>
-          </Table>
+        <Table variant="simple" size="sm">
+  <Thead bg="blue.50">
+    <Tr>
+      <Th>Nama Toko</Th>
+      <Th>Pemilik</Th>
+      <Th>Cabang</Th>
+      <Th>Segment</Th>
+      <Th>Lokasi</Th>
+      <Th>Tanggal Dibuat</Th>
+      <Th>Aksi</Th>
+    </Tr>
+  </Thead>
+  <Tbody>
+    {outlets
+      .filter((o) => o.segment === "Retail")
+      .map((o) => (
+        <Tr key={o.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
+          <Td>{o.store_name}</Td>
+          <Td>{o.owner_name}</Td>
+          <Td>{o.branch_name}</Td>
+          <Td>{o.segment}</Td>
+          <Td>
+            {o.latitude && o.longitude ? (
+              <a
+                href={`https://www.google.com/maps?q=${o.latitude},${o.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "blue", textDecoration: "underline" }}
+              >
+                {o.latitude}, {o.longitude}
+              </a>
+            ) : (
+              "-"
+            )}
+          </Td>
+          <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
+          <Td>
+            <HStack spacing="2">
+              <Button
+                size="xs"
+                colorScheme="yellow"
+                onClick={() => handleEditOutlet(o)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="xs"
+                colorScheme="red"
+                onClick={() => handleDeleteOutlet(o.id)}
+              >
+                Hapus
+              </Button>
+            </HStack>
+          </Td>
+        </Tr>
+      ))}
+  </Tbody>
+</Table>
         </TableContainer>
       </VStack>
 
@@ -316,6 +343,22 @@ export default function OutletsPage() {
                   <option value="Agent">Agent</option>
                   <option value="Wholesale">Wholesale</option>
                 </Select>
+              </FormControl>
+              <FormControl>
+                <FormLabel>Longitude</FormLabel>
+                <Input
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                  placeholder="Contoh: 106.816666"
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Latitude</FormLabel>
+                <Input
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                  placeholder="Contoh: -6.200000"
+                />
               </FormControl>
             </VStack>
           </ModalBody>
