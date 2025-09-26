@@ -38,6 +38,8 @@ interface Outlet {
   branch_id: number;
   branch_name: string;
   segment: string;
+  longitude: string | null;
+  latitude: string | null;
   created_at: string;
 }
 
@@ -179,6 +181,7 @@ export default function OutletsAgentPage() {
                 <Th>Pemilik</Th>
                 <Th>Cabang</Th>
                 <Th>Segment</Th>
+                <Th>Lokasi</Th>
                 <Th>Tanggal Dibuat</Th>
                 <Th>Aksi</Th>
               </Tr>
@@ -190,6 +193,20 @@ export default function OutletsAgentPage() {
                   <Td>{o.owner_name}</Td>
                   <Td>{user?.branch_name || "—"}</Td>
                   <Td>{o.segment}</Td>
+                  <Td>
+                    {o.latitude && o.longitude ? (
+                      <a
+                        href={`https://www.google.com/maps?q=${o.latitude},${o.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "blue", textDecoration: "underline" }}
+                      >
+                        📍 Lihat di Maps
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </Td>
                   <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
                   <Td>
                     <HStack spacing="2">
