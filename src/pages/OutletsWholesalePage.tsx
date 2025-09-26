@@ -38,6 +38,8 @@ interface Outlet {
   owner_name: string;
   branch_id: number;
   segment: string;
+  latitude?: number;
+  longitude?: number;
   created_at: string;
 }
 
@@ -63,7 +65,6 @@ export default function OutletsWholesalePage() {
   const [branchId, setBranchId] = useState<number>(
     user?.branch_id ? Number(user.branch_id) : 0
   );
-  
   const [segment, setSegment] = useState("Wholesale");
 
   // Edit state
@@ -98,7 +99,7 @@ export default function OutletsWholesalePage() {
 
     // default cabang untuk Admin Cabang
     if (user?.segment === "Admin Cabang" && user.branch_id) {
-      setBranchId(0)
+      setBranchId(0);
     }
   }, [user]);
 
@@ -115,13 +116,21 @@ export default function OutletsWholesalePage() {
         branch_id: branchId,
         segment,
       });
-      toast({ title: "Outlet berhasil ditambahkan", status: "success", duration: 3000 });
+      toast({
+        title: "Outlet berhasil ditambahkan",
+        status: "success",
+        duration: 3000,
+      });
       onClose();
       resetForm();
       fetchData();
     } catch (err) {
       console.error(err);
-      toast({ title: "Gagal menambahkan outlet", status: "error", duration: 3000 });
+      toast({
+        title: "Gagal menambahkan outlet",
+        status: "error",
+        duration: 3000,
+      });
     }
   };
 
@@ -147,7 +156,11 @@ export default function OutletsWholesalePage() {
         branch_id: branchId,
         segment,
       });
-      toast({ title: "Outlet berhasil diupdate", status: "success", duration: 3000 });
+      toast({
+        title: "Outlet berhasil diupdate",
+        status: "success",
+        duration: 3000,
+      });
       onClose();
       setEditingOutlet(null);
       resetForm();
@@ -162,11 +175,19 @@ export default function OutletsWholesalePage() {
     if (!confirm("Yakin ingin menghapus outlet ini?")) return;
     try {
       await api.delete(`/outlets/${id}`);
-      toast({ title: "Outlet berhasil dihapus", status: "success", duration: 3000 });
+      toast({
+        title: "Outlet berhasil dihapus",
+        status: "success",
+        duration: 3000,
+      });
       fetchData();
     } catch (err) {
       console.error(err);
-      toast({ title: "Gagal menghapus outlet", status: "error", duration: 3000 });
+      toast({
+        title: "Gagal menghapus outlet",
+        status: "error",
+        duration: 3000,
+      });
     }
   };
 
@@ -174,9 +195,9 @@ export default function OutletsWholesalePage() {
     setStoreName("");
     setOwnerName("");
     if (user?.segment === "Admin Cabang" && user.branch_id) {
-      setBranchId(0)
+      setBranchId(0);
     } else {
-      setBranchId(0); // ✅ FIX: jangan pakai string, gunakan 0
+      setBranchId(0);
     }
     setSegment("Wholesale");
   };
@@ -192,7 +213,9 @@ export default function OutletsWholesalePage() {
     <Box p="6">
       <VStack spacing="4" align="stretch">
         <HStack justifyContent="space-between">
-          <Text fontSize="2xl" fontWeight="bold">Data Outlet Wholesale</Text>
+          <Text fontSize="2xl" fontWeight="bold">
+            Data Outlet Wholesale
+          </Text>
           <Button
             colorScheme="blue"
             onClick={() => {
@@ -213,6 +236,7 @@ export default function OutletsWholesalePage() {
                 <Th>Pemilik</Th>
                 <Th>Cabang</Th>
                 <Th>Segment</Th>
+                <Th>Lokasi</Th>
                 <Th>Tanggal Dibuat</Th>
                 <Th>Aksi</Th>
               </Tr>
@@ -223,14 +247,41 @@ export default function OutletsWholesalePage() {
                   <Td>{o.store_name}</Td>
                   <Td>{o.owner_name}</Td>
                   <Td>
-                    {branches.find((b) => b.id === o.branch_id)?.branch_name || "—"}
+                    {branches.find((b) => b.id === o.branch_id)?.branch_name ||
+                      "—"}
                   </Td>
                   <Td>{o.segment}</Td>
+                  <Td>
+                    {o.latitude && o.longitude ? (
+                      <a
+                        href={`https://www.google.com/maps?q=${o.latitude},${o.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "blue", textDecoration: "underline" }}
+                      >
+                        {o.latitude}, {o.longitude}
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </Td>
                   <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
                   <Td>
                     <HStack spacing="2">
-                      <Button size="xs" colorScheme="yellow" onClick={() => handleEditOutlet(o)}>Edit</Button>
-                      <Button size="xs" colorScheme="red" onClick={() => handleDeleteOutlet(o.id)}>Hapus</Button>
+                      <Button
+                        size="xs"
+                        colorScheme="yellow"
+                        onClick={() => handleEditOutlet(o)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="xs"
+                        colorScheme="red"
+                        onClick={() => handleDeleteOutlet(o.id)}
+                      >
+                        Hapus
+                      </Button>
                     </HStack>
                   </Td>
                 </Tr>
@@ -244,17 +295,25 @@ export default function OutletsWholesalePage() {
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{editingOutlet ? "Edit Outlet" : "Tambah Outlet"}</ModalHeader>
+          <ModalHeader>
+            {editingOutlet ? "Edit Outlet" : "Tambah Outlet"}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing="4">
               <FormControl>
                 <FormLabel>Nama Toko</FormLabel>
-                <Input value={store_name} onChange={(e) => setStoreName(e.target.value)} />
+                <Input
+                  value={store_name}
+                  onChange={(e) => setStoreName(e.target.value)}
+                />
               </FormControl>
               <FormControl>
                 <FormLabel>Nama Pemilik</FormLabel>
-                <Input value={owner_name} onChange={(e) => setOwnerName(e.target.value)} />
+                <Input
+                  value={owner_name}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                />
               </FormControl>
               <FormControl>
                 <FormLabel>Cabang</FormLabel>
@@ -262,9 +321,13 @@ export default function OutletsWholesalePage() {
                   value={branchId}
                   onChange={(e) => setBranchId(Number(e.target.value))}
                   isDisabled={
-                    branchLoading || branches.length === 0 || user?.segment === "Admin Cabang"
+                    branchLoading ||
+                    branches.length === 0 ||
+                    user?.segment === "Admin Cabang"
                   }
-                  placeholder={branchLoading ? "Memuat cabang..." : "Pilih Cabang"}
+                  placeholder={
+                    branchLoading ? "Memuat cabang..." : "Pilih Cabang"
+                  }
                 >
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -275,7 +338,10 @@ export default function OutletsWholesalePage() {
               </FormControl>
               <FormControl>
                 <FormLabel>Segment</FormLabel>
-                <Select value={segment} onChange={(e) => setSegment(e.target.value)}>
+                <Select
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value)}
+                >
                   <option value="Retail">Retail</option>
                   <option value="Agent">Agent</option>
                   <option value="Wholesale">Wholesale</option>
@@ -284,10 +350,16 @@ export default function OutletsWholesalePage() {
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" mr={3} onClick={editingOutlet ? handleUpdateOutlet : handleAddOutlet}>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={editingOutlet ? handleUpdateOutlet : handleAddOutlet}
+            >
               {editingOutlet ? "Update" : "Simpan"}
             </Button>
-            <Button variant="ghost" onClick={onClose}>Batal</Button>
+            <Button variant="ghost" onClick={onClose}>
+              Batal
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
