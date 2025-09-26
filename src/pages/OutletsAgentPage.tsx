@@ -194,19 +194,20 @@ export default function OutletsAgentPage() {
                   <Td>{user?.branch_name || "—"}</Td>
                   <Td>{o.segment}</Td>
                   <Td>
-                    {o.latitude && o.longitude ? (
-                      <a
-                        href={`https://www.google.com/maps?q=${o.latitude},${o.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: "blue", textDecoration: "underline" }}
-                      >
-                        📍 Lihat di Maps
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </Td>
+  {o.latitude && o.longitude ? (
+    <a
+      href={`https://www.google.com/maps?q=${o.latitude},${o.longitude}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: "blue", textDecoration: "underline" }}
+    >
+      {o.latitude}, {o.longitude}
+    </a>
+  ) : (
+    "-"
+  )}
+</Td>
+
                   <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
                   <Td>
                     <HStack spacing="2">
