@@ -178,9 +178,11 @@ export default function LaporanPenjualan() {
       const totalNota = sortedOrders.reduce((sum, o) => sum + (o.grand_total || 0), 0);
       const jumlahOrder = sortedOrders.length;
       const totalQty = sortedOrders.reduce(
-        (sum, o) => sum + (o.order_items?.reduce((s, i) => s + i.quantity, 0) || 0),
+        (sum: number, o: Order) =>
+          sum + (o.order_items?.reduce((s: number, i: OrderItem) => s + i.quantity, 0) || 0),
         0
       );
+      
       setSummary({ totalNota, jumlahOrder, totalQty });
     } catch (err) {
       console.error("Fetch laporan penjualan error:", err);
