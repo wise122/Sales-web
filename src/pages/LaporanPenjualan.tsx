@@ -24,6 +24,13 @@ import api from "../utils/api";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
+type OrderItem = {
+  id: number;
+  product_name: string;
+  quantity: number;
+  price: number;
+};
+
 type Order = {
   id: number;
   outlet_id: number;
@@ -35,6 +42,7 @@ type Order = {
   created_at: string;
   outlet_name?: string;
   sales_name?: string;
+  order_items?: OrderItem[];
 };
 
 type Summary = {
@@ -63,31 +71,50 @@ export default function LaporanPenjualan() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-
   const downloadReport = () => {
     if (orders.length === 0) {
       alert("Tidak ada data untuk diunduh");
       return;
     }
-  
-    // bikin data array untuk excel
-    const exportData = orders.map((o) => ({
-      ID: o.id,
-      Tanggal: new Date(o.created_at).toLocaleDateString(),
-      Outlet: o.outlet_name,
-      Sales: o.sales_name,
-      "Metode Bayar": o.payment_method,
-      Cash: o.cash,
-      Transfer: o.transfer,
-      "Grand Total": o.grand_total,
-    }));
-  
-    // buat worksheet dan workbook
+
+    // Flatten data untuk Excel: setiap order_item jadi baris
+    const exportData: any[] = [];
+    orders.forEach((order) => {
+      if (order.order_items?.length) {
+        order.order_items.forEach((item) => {
+          exportData.push({
+            ID: order.id,
+            Tanggal: new Date(order.created_at).toLocaleDateString(),
+            Outlet: order.outlet_name,
+            Sales: order.sales_name,
+            "Metode Bayar": order.payment_method,
+            "Nama Barang": item.product_name,
+            Qty: item.quantity,
+            Harga: item.price,
+            Subtotal: item.quantity * item.price,
+            "Grand Total": order.grand_total,
+          });
+        });
+      } else {
+        exportData.push({
+          ID: order.id,
+          Tanggal: new Date(order.created_at).toLocaleDateString(),
+          Outlet: order.outlet_name,
+          Sales: order.sales_name,
+          "Metode Bayar": order.payment_method,
+          "Nama Barang": "-",
+          Qty: 0,
+          Harga: 0,
+          Subtotal: 0,
+          "Grand Total": order.grand_total,
+        });
+      }
+    });
+
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
-  
-    // simpan file
+
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
@@ -97,13 +124,12 @@ export default function LaporanPenjualan() {
     });
     saveAs(blob, `laporan-penjualan-${Date.now()}.xlsx`);
   };
-  // ambil data sales buat filter
+
+  // Ambil data sales untuk filter
   useEffect(() => {
     const fetchSales = async () => {
       try {
-        console.log("Fetching sales list...");
         const res = await api.get("/users?salesOnly=true");
-        console.log("Sales fetched:", res.data);
         setSalesList(res.data || []);
       } catch (err) {
         console.error("Fetch sales error:", err);
@@ -115,38 +141,25 @@ export default function LaporanPenjualan() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      console.log("Fetching orders with filters:", filters);
-  
-      // build query params
       const params = new URLSearchParams();
-if (filters.sales) params.append("sales_id", filters.sales);   // 👈 ganti
-if (filters.start) params.append("start_date", filters.start); // 👈 ganti
-if (filters.end) params.append("end_date", filters.end);       // 👈 ganti
-if (filters.month) params.append("month", filters.month);
-if (filters.year) params.append("year", filters.year);
+      if (filters.sales) params.append("sales_id", filters.sales);
+      if (filters.start) params.append("start_date", filters.start);
+      if (filters.end) params.append("end_date", filters.end);
+      if (filters.month) params.append("month", filters.month);
+      if (filters.year) params.append("year", filters.year);
 
-  
-      console.log("Query params:", params.toString());
-  
-      // ambil data orders, outlets, users bersamaan
       const [ordersRes, outletsRes, usersRes] = await Promise.all([
         api.get(`/orders?${params.toString()}`),
         api.get("/outlets"),
         api.get("/users?salesOnly=true"),
       ]);
-  
-      // pastikan data berbentuk array
+
       const fetchedOrders: any[] = Array.isArray(ordersRes.data?.orders)
         ? ordersRes.data.orders
         : [];
       const outlets: any[] = Array.isArray(outletsRes.data) ? outletsRes.data : [];
       const users: any[] = Array.isArray(usersRes.data) ? usersRes.data : [];
-  
-      console.log("Fetched orders:", fetchedOrders);
-      console.log("Fetched outlets:", outlets);
-      console.log("Fetched users:", users);
-  
-      // mapping outlet_name & sales_name
+
       const mappedOrders = fetchedOrders.map((o) => {
         const outlet = outlets.find((out) => out.id === o.outlet_id);
         const user = users.find((u) => u.id === o.user_id);
@@ -154,20 +167,21 @@ if (filters.year) params.append("year", filters.year);
           ...o,
           outlet_name: outlet?.store_name || "-",
           sales_name: user?.name || "-",
+          order_items: o.order_items || [],
         };
       });
-  
-      // urutkan berdasarkan ID
+
       const sortedOrders = mappedOrders.sort((a, b) => a.id - b.id);
       setOrders(sortedOrders);
-  
-      // hitung summary di frontend
+
+      // Hitung summary frontend
       const totalNota = sortedOrders.reduce((sum, o) => sum + (o.grand_total || 0), 0);
       const jumlahOrder = sortedOrders.length;
-      const totalQty = 0; // kalau qty ingin ditampilkan, backend harus kirim order_items
+      const totalQty = sortedOrders.reduce(
+        (sum, o) => sum + (o.order_items?.reduce((s, i) => s + i.quantity, 0) || 0),
+        0
+      );
       setSummary({ totalNota, jumlahOrder, totalQty });
-  
-      console.log("Summary:", { totalNota, jumlahOrder, totalQty });
     } catch (err) {
       console.error("Fetch laporan penjualan error:", err);
       setOrders([]);
@@ -176,8 +190,6 @@ if (filters.year) params.append("year", filters.year);
       setLoading(false);
     }
   };
-  
-  
 
   useEffect(() => {
     fetchOrders();
@@ -185,9 +197,7 @@ if (filters.year) params.append("year", filters.year);
 
   return (
     <Box p="6">
-      <Heading size="lg" mb="6">
-        Laporan Penjualan
-      </Heading>
+      <Heading size="lg" mb="6">Laporan Penjualan</Heading>
 
       {/* Filter */}
       <HStack spacing="4" mb="6" flexWrap="wrap">
@@ -198,52 +208,26 @@ if (filters.year) params.append("year", filters.year);
           w="200px"
         >
           {salesList.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
+            <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </Select>
 
-        <Input
-          type="date"
-          value={filters.start}
-          onChange={(e) => setFilters({ ...filters, start: e.target.value })}
-        />
-        <Input
-          type="date"
-          value={filters.end}
-          onChange={(e) => setFilters({ ...filters, end: e.target.value })}
-        />
+        <Input type="date" value={filters.start} onChange={(e) => setFilters({ ...filters, start: e.target.value })} />
+        <Input type="date" value={filters.end} onChange={(e) => setFilters({ ...filters, end: e.target.value })} />
 
-        <Select
-          placeholder="Bulan"
-          value={filters.month}
-          onChange={(e) => setFilters({ ...filters, month: e.target.value })}
-          w="120px"
-        >
+        <Select placeholder="Bulan" value={filters.month} onChange={(e) => setFilters({ ...filters, month: e.target.value })} w="120px">
           {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
+            <option key={m} value={m}>{m}</option>
           ))}
         </Select>
 
-        <Select
-          placeholder="Tahun"
-          value={filters.year}
-          onChange={(e) => setFilters({ ...filters, year: e.target.value })}
-          w="120px"
-        >
+        <Select placeholder="Tahun" value={filters.year} onChange={(e) => setFilters({ ...filters, year: e.target.value })} w="120px">
           {["2023", "2024", "2025"].map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
+            <option key={y} value={y}>{y}</option>
           ))}
         </Select>
 
-        <Button colorScheme="blue" onClick={fetchOrders} isLoading={loading}>
-          Filter
-        </Button>
+        <Button colorScheme="blue" onClick={fetchOrders} isLoading={loading}>Filter</Button>
         <Button
           variant="outline"
           onClick={() => {
@@ -253,14 +237,7 @@ if (filters.year) params.append("year", filters.year);
         >
           Reset
         </Button>
-        <Button
-  colorScheme="green"
-  onClick={downloadReport}
-  isDisabled={orders.length === 0}
->
-  Download Laporan
-</Button>
-
+        <Button colorScheme="green" onClick={downloadReport} isDisabled={orders.length === 0}>Download Laporan</Button>
       </HStack>
 
       {/* Ringkasan */}
@@ -289,52 +266,65 @@ if (filters.year) params.append("year", filters.year);
         </Box>
       ) : (
         <Table variant="striped" size="sm">
-          <Thead>
-            <Tr>
-              <Th>ID</Th>
-              <Th>Tanggal</Th>
-              <Th>Outlet</Th>
-              <Th>Sales</Th>
-              <Th>Metode Bayar</Th>
-              <Th isNumeric>Cash</Th>
-              <Th isNumeric>Transfer</Th>
-              <Th isNumeric>Grand Total</Th>
+  <Thead>
+    <Tr>
+      <Th>ID</Th>
+      <Th>Tanggal</Th>
+      <Th>Outlet</Th>
+      <Th>Sales</Th>
+      <Th>Metode Bayar</Th>
+      <Th>Nama Barang</Th>
+      <Th isNumeric>Qty</Th>
+      <Th isNumeric>Harga</Th>
+      <Th isNumeric>Subtotal</Th>
+      <Th isNumeric>Grand Total</Th>
+    </Tr>
+  </Thead>
+  <Tbody>
+    {orders.length > 0 ? (
+      orders.flatMap((order) => {
+        if (order.order_items && order.order_items.length > 0) {
+          return order.order_items.map((item, index) => (
+            <Tr key={`${order.id}-${item.id}`}>
+              <Td>{index === 0 ? order.id : ""}</Td>
+              <Td>{index === 0 ? new Date(order.created_at).toLocaleDateString() : ""}</Td>
+              <Td>{index === 0 ? order.outlet_name : ""}</Td>
+              <Td>{index === 0 ? order.sales_name : ""}</Td>
+              <Td>{index === 0 ? order.payment_method : ""}</Td>
+              <Td>{item.product_name}</Td>
+              <Td isNumeric>{item.quantity}</Td>
+              <Td isNumeric>Rp {item.price.toLocaleString()}</Td>
+              <Td isNumeric>Rp {(item.quantity * item.price).toLocaleString()}</Td>
+              <Td isNumeric>{index === 0 ? `Rp ${order.grand_total.toLocaleString()}` : ""}</Td>
             </Tr>
-          </Thead>
-          <Tbody>
-            {orders.length > 0 ? (
-              orders.map((order) => (
-                <Tr
-                  key={order.id}
-                  _hover={{ bg: "gray.100", cursor: "pointer" }}
-                  onClick={() => {
-                    console.log("Navigating to order ID:", order.id);
-                    navigate(`/laporan-penjualan/${order.id}`);
-                  }}
-                >
-                  <Td>{order.id}</Td>
-                  <Td>{new Date(order.created_at).toLocaleDateString()}</Td>
-                  <Td>{order.outlet_name}</Td>
-                  <Td>{order.sales_name}</Td>
-                  <Td>{order.payment_method}</Td>
-                  <Td isNumeric>Rp {order.cash.toLocaleString()}</Td>
-                  <Td isNumeric>Rp {order.transfer.toLocaleString()}</Td>
-                  <Td isNumeric fontWeight="bold">
-                    Rp {order.grand_total.toLocaleString()}
-                  </Td>
-                </Tr>
-              ))
-            ) : (
-              <Tr>
-                <Td colSpan={8}>
-                  <Text textAlign="center" color="gray.500">
-                    Belum ada data penjualan
-                  </Text>
-                </Td>
-              </Tr>
-            )}
-          </Tbody>
-        </Table>
+          ));
+        } else {
+          return (
+            <Tr key={order.id}>
+              <Td>{order.id}</Td>
+              <Td>{new Date(order.created_at).toLocaleDateString()}</Td>
+              <Td>{order.outlet_name}</Td>
+              <Td>{order.sales_name}</Td>
+              <Td>{order.payment_method}</Td>
+              <Td>-</Td>
+              <Td isNumeric>0</Td>
+              <Td isNumeric>0</Td>
+              <Td isNumeric>0</Td>
+              <Td isNumeric>Rp {order.grand_total.toLocaleString()}</Td>
+            </Tr>
+          );
+        }
+      })
+    ) : (
+      <Tr>
+        <Td colSpan={10}>
+          <Text textAlign="center" color="gray.500">Belum ada data penjualan</Text>
+        </Td>
+      </Tr>
+    )}
+  </Tbody>
+</Table>
+
       )}
     </Box>
   );
