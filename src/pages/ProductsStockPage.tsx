@@ -10,50 +10,65 @@ import {
   Thead,
   Tr,
   Text,
-  NumberInput,
-  NumberInputField,
+  Input,
+  Select,
   Button,
   useToast,
   Card,
   CardHeader,
   CardBody,
-  Badge,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  NumberInput,
+  NumberInputField,
+  FormControl,
+  FormLabel,
 } from "@chakra-ui/react";
 import api from "../utils/api";
 
 type Product = {
   id: number;
+  code: string;
   name: string;
+  satuan: string;
   stock: number;
-  stock_sales: number;
+  tambah: number;
   stock_akhir: number;
-  editedStock?: number; // stok sementara untuk input
 };
 
 const ProductsStockPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+  // Filter
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [branch, setBranch] = useState("");
+
+  // Modal Tambah Stok
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [addStock, setAddStock] = useState<number>(0);
+
   const toast = useToast();
 
-  // Fetch products
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await api.get<Product[]>("/products", {
+      const res = await api.get("/products", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
-      // tambahkan field editedStock biar tidak hilang data asli
-      const dataWithEdited = res.data.map((p) => ({
-        ...p,
-        editedStock: p.stock_akhir,
-      }));
-      setProducts(dataWithEdited);
+      setProducts(res.data);
     } catch (err) {
-      console.error("❌ Gagal fetch products:", err);
+      console.error("Error fetch products:", err);
     } finally {
       setLoading(false);
     }
@@ -63,19 +78,29 @@ const ProductsStockPage: React.FC = () => {
     fetchProducts();
   }, []);
 
-  // Update stok
-  const handleUpdateStock = async (id: number, newStock: number) => {
-    setUpdatingId(id);
+  // open modal
+  const openAddModal = (product: Product) => {
+    setSelectedProduct(product);
+    setAddStock(0);
+    setIsOpen(true);
+  };
+
+  const handleUpdateStock = async () => {
+    if (!selectedProduct) return;
+
     try {
       await api.put(
-        `/products/${id}`,
-        { stock_akhir: newStock },
+        `/products/${selectedProduct.id}`,
+        {
+          tambah: addStock,
+        },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         }
       );
+
       toast({
         title: "Berhasil",
         description: "Stok berhasil diperbarui",
@@ -83,31 +108,50 @@ const ProductsStockPage: React.FC = () => {
         duration: 2000,
         isClosable: true,
       });
+
+      setIsOpen(false);
       fetchProducts();
     } catch (err) {
-      console.error("❌ Gagal update stok:", err);
       toast({
-        title: "Error",
-        description: "Gagal update stok",
+        title: "Gagal",
+        description: "Stok gagal diperbarui",
         status: "error",
         duration: 2000,
         isClosable: true,
       });
-    } finally {
-      setUpdatingId(null);
     }
   };
 
   return (
     <Box p={6}>
+      <Heading size="lg" mb={5}>Manajemen Stok Produk</Heading>
+
       <Card shadow="md" borderRadius="lg">
         <CardHeader>
-          <Heading size="md" color="teal.600">
-            📦 Update Stok Produk
-          </Heading>
-          <Text fontSize="sm" color="gray.500">
-            Kelola stok produk dengan lebih mudah
-          </Text>
+          <Heading size="md">Manajemen Produk</Heading>
+
+          <Box mt={4} display="flex" gap={3}>
+            <Input
+              placeholder="Pencarian Produk"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              width="250px"
+            />
+
+            <Select
+              placeholder="Kategori Produk"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              width="200px"
+            >
+              <option value="minuman">Minuman</option>
+              <option value="makanan">Makanan</option>
+            </Select>
+
+
+            <Button colorScheme="blue">Filter</Button>
+            <Button variant="outline">Reset</Button>
+          </Box>
         </CardHeader>
 
         <CardBody>
@@ -115,64 +159,40 @@ const ProductsStockPage: React.FC = () => {
             <Box textAlign="center" py={6}>
               <Spinner size="xl" />
             </Box>
-          ) : products.length === 0 ? (
-            <Text textAlign="center" color="gray.500">
-              Tidak ada produk tersedia.
-            </Text>
           ) : (
-            <Table variant="simple" size="sm">
+            <Table variant="simple" size="md">
               <Thead bg="gray.50">
                 <Tr>
+                  <Th>No</Th>
+                  <Th>Kode Produk</Th>
                   <Th>Nama Produk</Th>
+                  <Th>Satuan</Th>
+                  <Th isNumeric>Stok Awal</Th>
+                  <Th isNumeric>Tambah</Th>
                   <Th isNumeric>Stok Akhir</Th>
-                  <Th isNumeric>Update Stok</Th>
+                  <Th>Aksi</Th>
                 </Tr>
               </Thead>
+
               <Tbody>
-                {products.map((p) => (
+                {products.map((p, index) => (
                   <Tr key={p.id}>
-                    <Td fontWeight="medium">{p.name}</Td>
-                    <Td isNumeric>
-                      <Badge
-                        colorScheme={p.stock_akhir > 10 ? "green" : "red"}
-                        fontSize="0.9em"
-                        px={3}
-                        py={1}
-                        borderRadius="md"
+                    <Td>{index + 1}</Td>
+                    <Td>{p.code}</Td>
+                    <Td>{p.name}</Td>
+                    <Td>{p.satuan}</Td>
+                    <Td isNumeric>{p.stock}</Td>
+                    <Td isNumeric>{p.tambah}</Td>
+                    <Td isNumeric>{p.stock_akhir}</Td>
+                    <Td>
+                      <Button size="sm" mr={2}>Detail</Button>
+                      <Button
+                        size="sm"
+                        colorScheme="blue"
+                        onClick={() => openAddModal(p)}
                       >
-                        {p.stock_akhir}
-                      </Badge>
-                    </Td>
-                    <Td isNumeric>
-                      <Box display="flex" justifyContent="flex-end" gap={2}>
-                        <NumberInput
-                          value={p.editedStock}
-                          min={0}
-                          onChange={(_, valNumber) =>
-                            setProducts((prev) =>
-                              prev.map((prod) =>
-                                prod.id === p.id
-                                  ? { ...prod, editedStock: valNumber }
-                                  : prod
-                              )
-                            )
-                          }
-                          size="sm"
-                          width="90px"
-                        >
-                          <NumberInputField />
-                        </NumberInput>
-                        <Button
-                          size="sm"
-                          colorScheme="blue"
-                          onClick={() =>
-                            handleUpdateStock(p.id, p.editedStock ?? p.stock_akhir)
-                          }
-                          isLoading={updatingId === p.id}
-                        >
-                          Simpan
-                        </Button>
-                      </Box>
+                        Tambah
+                      </Button>
                     </Td>
                   </Tr>
                 ))}
@@ -181,6 +201,60 @@ const ProductsStockPage: React.FC = () => {
           )}
         </CardBody>
       </Card>
+
+      {/* MODAL TAMBAH STOK */}
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Tambah Stok</ModalHeader>
+          <ModalCloseButton />
+
+          <ModalBody>
+            {selectedProduct && (
+              <>
+                <FormControl mb={3}>
+                  <FormLabel>Kode Produk</FormLabel>
+                  <Input value={selectedProduct.code} isReadOnly />
+                </FormControl>
+
+                <FormControl mb={3}>
+                  <FormLabel>Nama Produk</FormLabel>
+                  <Input value={selectedProduct.name} isReadOnly />
+                </FormControl>
+
+                <FormControl mb={3}>
+                  <FormLabel>Satuan</FormLabel>
+                  <Input value={selectedProduct.satuan} isReadOnly />
+                </FormControl>
+
+                <FormControl mb={3}>
+                  <FormLabel>Stok Awal</FormLabel>
+                  <Input value={selectedProduct.stock} isReadOnly />
+                </FormControl>
+
+                <FormControl mb={3}>
+                  <FormLabel>Tambah Stok</FormLabel>
+                  <NumberInput
+                    min={0}
+                    onChange={(_, val) => setAddStock(val)}
+                  >
+                    <NumberInputField />
+                  </NumberInput>
+                </FormControl>
+              </>
+            )}
+          </ModalBody>
+
+          <ModalFooter>
+            <Button mr={3} onClick={() => setIsOpen(false)}>
+              Batal
+            </Button>
+            <Button colorScheme="blue" onClick={handleUpdateStock}>
+              Simpan
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

@@ -256,7 +256,7 @@ export default function OutletsPage() {
                 rel="noopener noreferrer"
                 style={{ color: "blue", textDecoration: "underline" }}
               >
-                {o.latitude}, {o.longitude}
+                https://www.google.com/maps?q={o.latitude},{o.longitude}
               </a>
             ) : (
               "-"

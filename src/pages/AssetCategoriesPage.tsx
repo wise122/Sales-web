@@ -16,6 +16,16 @@ import {
   HStack,
   useToast,
   Input,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
+  FormControl,
+  FormLabel,
 } from "@chakra-ui/react";
 import api from "../utils/api";
 
@@ -28,7 +38,11 @@ export default function AssetCategoriesPage() {
   const [categories, setCategories] = useState<AssetCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
+  const [editing, setEditing] = useState<AssetCategory | null>(null);
+  const [editName, setEditName] = useState("");
+
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const fetchData = async () => {
     setLoading(true);
@@ -48,7 +62,10 @@ export default function AssetCategoriesPage() {
   }, []);
 
   const handleAdd = async () => {
-    if (!newName) return;
+    if (!newName.trim()) {
+      toast({ title: "Nama kategori wajib diisi", status: "warning" });
+      return;
+    }
     try {
       await api.post("/asset-categories", { name: newName });
       setNewName("");
@@ -72,6 +89,29 @@ export default function AssetCategoriesPage() {
     }
   };
 
+  const handleEditOpen = (cat: AssetCategory) => {
+    setEditing(cat);
+    setEditName(cat.name);
+    onOpen();
+  };
+
+  const handleEditSave = async () => {
+    if (!editName.trim()) {
+      toast({ title: "Nama kategori wajib diisi", status: "warning" });
+      return;
+    }
+    try {
+      await api.put(`/asset-categories/${editing?.id}`, { name: editName });
+      toast({ title: "Kategori berhasil diupdate", status: "success" });
+      onClose();
+      setEditing(null);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Gagal mengupdate kategori", status: "error" });
+    }
+  };
+
   if (loading)
     return (
       <Center h="80vh">
@@ -86,6 +126,7 @@ export default function AssetCategoriesPage() {
           Kategori Asset
         </Text>
 
+        {/* Tambah kategori */}
         <HStack>
           <Input
             placeholder="Nama kategori baru"
@@ -97,6 +138,7 @@ export default function AssetCategoriesPage() {
           </Button>
         </HStack>
 
+        {/* Tabel daftar kategori */}
         <TableContainer border="1px" borderColor="gray.200" borderRadius="md">
           <Table size="sm">
             <Thead bg="blue.50">
@@ -112,13 +154,22 @@ export default function AssetCategoriesPage() {
                   <Td>{c.id}</Td>
                   <Td>{c.name}</Td>
                   <Td>
-                    <Button
-                      size="xs"
-                      colorScheme="red"
-                      onClick={() => handleDelete(c.id)}
-                    >
-                      Hapus
-                    </Button>
+                    <HStack spacing="2">
+                      <Button
+                        size="xs"
+                        colorScheme="yellow"
+                        onClick={() => handleEditOpen(c)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="xs"
+                        colorScheme="red"
+                        onClick={() => handleDelete(c.id)}
+                      >
+                        Hapus
+                      </Button>
+                    </HStack>
                   </Td>
                 </Tr>
               ))}
@@ -126,6 +177,30 @@ export default function AssetCategoriesPage() {
           </Table>
         </TableContainer>
       </VStack>
+
+      {/* Modal edit */}
+      <Modal isOpen={isOpen} onClose={onClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Edit Kategori</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl>
+              <FormLabel>Nama Kategori</FormLabel>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={handleEditSave}>
+              Simpan
+            </Button>
+            <Button onClick={onClose}>Batal</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
