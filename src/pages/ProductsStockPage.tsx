@@ -35,9 +35,7 @@ type Product = {
   id: number;
   code: string;
   name: string;
-  satuan: string;
   stock: number;
-  tambah: number;
   stock_akhir: number;
 };
 
@@ -166,9 +164,7 @@ const ProductsStockPage: React.FC = () => {
                   <Th>No</Th>
                   <Th>Kode Produk</Th>
                   <Th>Nama Produk</Th>
-                  <Th>Satuan</Th>
                   <Th isNumeric>Stok Awal</Th>
-                  <Th isNumeric>Tambah</Th>
                   <Th isNumeric>Stok Akhir</Th>
                   <Th>Aksi</Th>
                 </Tr>
@@ -180,12 +176,10 @@ const ProductsStockPage: React.FC = () => {
                     <Td>{index + 1}</Td>
                     <Td>{p.code}</Td>
                     <Td>{p.name}</Td>
-                    <Td>{p.satuan}</Td>
                     <Td isNumeric>{p.stock}</Td>
-                    <Td isNumeric>{p.tambah}</Td>
                     <Td isNumeric>{p.stock_akhir}</Td>
                     <Td>
-                      <Button size="sm" mr={2}>Detail</Button>
+                      
                       <Button
                         size="sm"
                         colorScheme="blue"
@@ -222,10 +216,6 @@ const ProductsStockPage: React.FC = () => {
                   <Input value={selectedProduct.name} isReadOnly />
                 </FormControl>
 
-                <FormControl mb={3}>
-                  <FormLabel>Satuan</FormLabel>
-                  <Input value={selectedProduct.satuan} isReadOnly />
-                </FormControl>
 
                 <FormControl mb={3}>
                   <FormLabel>Stok Awal</FormLabel>

@@ -56,6 +56,7 @@ export default function OutletsPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [branchLoading, setBranchLoading] = useState(true);
+  const [mapsUrl, setMapsUrl] = useState("");
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -67,6 +68,27 @@ export default function OutletsPage() {
   const [segment, setSegment] = useState("Agent");
   const [longitude, setLongitude] = useState("");
   const [latitude, setLatitude] = useState("");
+
+  const extractLatLng = (url: string) => {
+    try {
+      // Format 1: maps?q=LAT,LNG
+      const qMatch = url.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (qMatch) return { lat: qMatch[1], lng: qMatch[2] };
+
+      // Format 2: ?latitude=LAT&longitude=LNG
+      const latMatch = url.match(/latitude=(-?\d+\.\d+)/);
+      const lngMatch = url.match(/longitude=(-?\d+\.\d+)/);
+      if (latMatch && lngMatch) return { lat: latMatch[1], lng: lngMatch[1] };
+
+      // Format 3: general search LAT, LNG
+      const generic = url.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+      if (generic) return { lat: generic[1], lng: generic[2] };
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
 
   // Edit state
   const [editingOutlet, setEditingOutlet] = useState<Outlet | null>(null);
@@ -102,6 +124,14 @@ export default function OutletsPage() {
   }, [user]);
 
   const handleAddOutlet = async () => {
+    const coords = extractLatLng(mapsUrl);
+
+
+    if (!coords) {
+      toast({ title: "Link Google Maps tidak valid", status: "error" });
+      return;
+    }
+
     if (!store_name || !owner_name || !branch_id) {
       toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
@@ -113,8 +143,8 @@ export default function OutletsPage() {
         owner_name,
         branch_id: Number(branch_id),
         segment,
-        longitude,
-        latitude,
+        longitude: coords.lng,
+        latitude: coords.lat,
       });
       toast({
         title: "Outlet berhasil ditambahkan",
@@ -136,8 +166,12 @@ export default function OutletsPage() {
     setOwnerName(outlet.owner_name);
     setBranch(String(outlet.branch_id));
     setSegment(outlet.segment);
-    setLongitude(outlet.longitude || "");
-    setLatitude(outlet.latitude || "");
+    if (outlet.latitude && outlet.longitude) {
+      setMapsUrl(`https://www.google.com/maps?q=${outlet.latitude},${outlet.longitude}`);
+    } else {
+      setMapsUrl("");
+    }
+
     onOpen();
   };
 
@@ -147,14 +181,22 @@ export default function OutletsPage() {
       return;
     }
 
+    const coords = extractLatLng(mapsUrl);
+
+    if (!coords) {
+      toast({ title: "Link Google Maps tidak valid", status: "error" });
+      return;
+    }
+
+
     try {
       await api.put(`/outlets/${editingOutlet.id}`, {
         store_name,
         owner_name,
         branch_id: Number(branch_id),
         segment,
-        longitude,
-        latitude,
+        longitude: coords.lng,
+        latitude: coords.lat,
       });
       toast({
         title: "Outlet berhasil diupdate",
@@ -345,19 +387,11 @@ export default function OutletsPage() {
                 </Select>
               </FormControl>
               <FormControl>
-                <FormLabel>Longitude</FormLabel>
+                <FormLabel>Link Google Maps</FormLabel>
                 <Input
-                  value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
-                  placeholder="Contoh: 106.816666"
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Latitude</FormLabel>
-                <Input
-                  value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
-                  placeholder="Contoh: -6.200000"
+                  placeholder="Tempel link Google Maps disini"
+                  value={mapsUrl}
+                  onChange={(e) => setMapsUrl(e.target.value)}
                 />
               </FormControl>
             </VStack>

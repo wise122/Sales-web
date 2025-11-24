@@ -1,4 +1,4 @@
-// src/pages/OutletsWholesalePage.tsx
+// src/pages/OutletsPage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -30,16 +30,17 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import api from "../utils/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext"; // ✅ pakai AuthContext
 
 interface Outlet {
   id: number;
   store_name: string;
   owner_name: string;
   branch_id: number;
+  branch_name: string;
   segment: string;
-  latitude?: number;
-  longitude?: number;
+  longitude: string | null;
+  latitude: string | null;
   created_at: string;
 }
 
@@ -50,34 +51,53 @@ interface Branch {
 }
 
 export default function OutletsWholesalePage() {
-  const { user } = useAuth();
+  const { user } = useAuth(); // ✅ ambil user dari context
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [branchLoading, setBranchLoading] = useState(true);
+  const [mapsUrl, setMapsUrl] = useState("");
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  // form
+  // Form state
   const [store_name, setStoreName] = useState("");
   const [owner_name, setOwnerName] = useState("");
-  const [branchId, setBranchId] = useState<number>(
-    user?.branch_id ? Number(user.branch_id) : 0
-  );
+  const [branch_id, setBranch] = useState<string>("");
   const [segment, setSegment] = useState("Wholesale");
+  const [longitude, setLongitude] = useState("");
+  const [latitude, setLatitude] = useState("");
 
+  const extractLatLng = (url: string) => {
+    try {
+      // Format 1: maps?q=LAT,LNG
+      const qMatch = url.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (qMatch) return { lat: qMatch[1], lng: qMatch[2] };
+
+      // Format 2: ?latitude=LAT&longitude=LNG
+      const latMatch = url.match(/latitude=(-?\d+\.\d+)/);
+      const lngMatch = url.match(/longitude=(-?\d+\.\d+)/);
+      if (latMatch && lngMatch) return { lat: latMatch[1], lng: lngMatch[1] };
+
+      // Format 3: general search LAT, LNG
+      const generic = url.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+      if (generic) return { lat: generic[1], lng: generic[2] };
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Edit state
   const [editingOutlet, setEditingOutlet] = useState<Outlet | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const resOutlets = await api.get<Outlet[]>("/outlets");
-
-      const wholesaleOutlets = resOutlets.data.filter(
-        (o) => o.segment?.toLowerCase() === "wholesale"
-      );
-      setOutlets(wholesaleOutlets);
+      setOutlets(resOutlets.data);
 
       setBranchLoading(true);
       const resBranches = await api.get("/cabang");
@@ -86,7 +106,8 @@ export default function OutletsWholesalePage() {
         : resBranches.data?.data || [];
       setBranches(dataBranches);
     } catch (err) {
-      toast({ title: "Gagal mengambil data", status: "error" });
+      console.error(err);
+      toast({ title: "Gagal mengambil data", status: "error", duration: 3000 });
     } finally {
       setLoading(false);
       setBranchLoading(false);
@@ -96,14 +117,23 @@ export default function OutletsWholesalePage() {
   useEffect(() => {
     fetchData();
 
+    // default cabang untuk Admin Cabang
     if (user?.segment === "Admin Cabang" && user.branch_id) {
-      setBranchId(0);
+      setBranch(String(user.branch_id));
     }
   }, [user]);
 
   const handleAddOutlet = async () => {
-    if (!store_name || !owner_name || !branchId) {
-      toast({ title: "Isi semua field wajib", status: "error" });
+    const coords = extractLatLng(mapsUrl);
+
+
+    if (!coords) {
+      toast({ title: "Link Google Maps tidak valid", status: "error" });
+      return;
+    }
+
+    if (!store_name || !owner_name || !branch_id) {
+      toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
 
@@ -111,16 +141,22 @@ export default function OutletsWholesalePage() {
       await api.post("/outlets", {
         store_name,
         owner_name,
-        branch_id: branchId,
+        branch_id: Number(branch_id),
         segment,
+        longitude: coords.lng,
+        latitude: coords.lat,
       });
-
-      toast({ title: "Outlet berhasil ditambahkan", status: "success" });
+      toast({
+        title: "Outlet berhasil ditambahkan",
+        status: "success",
+        duration: 3000,
+      });
       onClose();
       resetForm();
       fetchData();
     } catch (err) {
-      toast({ title: "Gagal menambahkan outlet", status: "error" });
+      console.error(err);
+      toast({ title: "Gagal menambahkan outlet", status: "error", duration: 3000 });
     }
   };
 
@@ -128,52 +164,82 @@ export default function OutletsWholesalePage() {
     setEditingOutlet(outlet);
     setStoreName(outlet.store_name);
     setOwnerName(outlet.owner_name);
-    setBranchId(outlet.branch_id);
+    setBranch(String(outlet.branch_id));
     setSegment(outlet.segment);
+    if (outlet.latitude && outlet.longitude) {
+      setMapsUrl(`https://www.google.com/maps?q=${outlet.latitude},${outlet.longitude}`);
+    } else {
+      setMapsUrl("");
+    }
+
     onOpen();
   };
 
   const handleUpdateOutlet = async () => {
-    if (!editingOutlet || !store_name || !owner_name || !branchId) {
-      toast({ title: "Isi semua field wajib", status: "error" });
+    if (!editingOutlet || !store_name || !owner_name || !branch_id) {
+      toast({ title: "Isi semua field wajib", status: "error", duration: 3000 });
       return;
     }
+
+    const coords = extractLatLng(mapsUrl);
+
+    if (!coords) {
+      toast({ title: "Link Google Maps tidak valid", status: "error" });
+      return;
+    }
+
 
     try {
       await api.put(`/outlets/${editingOutlet.id}`, {
         store_name,
         owner_name,
-        branch_id: branchId,
+        branch_id: Number(branch_id),
         segment,
+        longitude: coords.lng,
+        latitude: coords.lat,
       });
-
-      toast({ title: "Outlet berhasil diperbarui", status: "success" });
+      toast({
+        title: "Outlet berhasil diupdate",
+        status: "success",
+        duration: 3000,
+      });
       onClose();
       setEditingOutlet(null);
       resetForm();
       fetchData();
     } catch (err) {
-      toast({ title: "Gagal update outlet", status: "error" });
+      console.error(err);
+      toast({ title: "Gagal update outlet", status: "error", duration: 3000 });
     }
   };
 
   const handleDeleteOutlet = async (id: number) => {
     if (!confirm("Yakin ingin menghapus outlet ini?")) return;
-
     try {
       await api.delete(`/outlets/${id}`);
-      toast({ title: "Outlet berhasil dihapus", status: "success" });
+      toast({
+        title: "Outlet berhasil dihapus",
+        status: "success",
+        duration: 3000,
+      });
       fetchData();
     } catch (err) {
-      toast({ title: "Gagal menghapus outlet", status: "error" });
+      console.error(err);
+      toast({ title: "Gagal menghapus outlet", status: "error", duration: 3000 });
     }
   };
 
   const resetForm = () => {
     setStoreName("");
     setOwnerName("");
-    setBranchId(0);
+    if (user?.segment === "Admin Cabang" && user.branch_id) {
+      setBranch(String(user.branch_id));
+    } else {
+      setBranch("");
+    }
     setSegment("Wholesale");
+    setLongitude("");
+    setLatitude("");
   };
 
   if (loading)
@@ -188,7 +254,7 @@ export default function OutletsWholesalePage() {
       <VStack spacing="4" align="stretch">
         <HStack justifyContent="space-between">
           <Text fontSize="2xl" fontWeight="bold">
-            Data Outlet Wholesale
+            Data Outlet
           </Text>
           <Button
             colorScheme="blue"
@@ -203,77 +269,68 @@ export default function OutletsWholesalePage() {
         </HStack>
 
         <TableContainer border="1px" borderColor="gray.200" borderRadius="md">
-          <Table variant="simple" size="sm">
-            <Thead bg="blue.50">
-              <Tr>
-                <Th>Nama Toko</Th>
-                <Th>Pemilik</Th>
-                <Th>Cabang</Th>
-                <Th>Segment</Th>
-                <Th>Lokasi</Th> {/* sudah jadi link Google Maps */}
-                <Th>Tanggal Dibuat</Th>
-                <Th>Aksi</Th>
-              </Tr>
-            </Thead>
-
-            <Tbody>
-              {outlets.map((o) => (
-                <Tr key={o.id} _hover={{ bg: "gray.50" }}>
-                  <Td>{o.store_name}</Td>
-                  <Td>{o.owner_name}</Td>
-                  <Td>
-                    {branches.find((b) => b.id === o.branch_id)?.branch_name ??
-                      "—"}
-                  </Td>
-
-                  <Td>{o.segment}</Td>
-
-                  {/* === LINK GOOGLE MAPS === */}
-                  <Td>
-                    {o.latitude && o.longitude ? (
-                      <a
-                        href={`https://www.google.com/maps?q=${o.latitude},${o.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: "blue", textDecoration: "underline" }}
-                      >
-                        {o.latitude}, {o.longitude}
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </Td>
-
-                  <Td>
-                    {new Date(o.created_at).toLocaleDateString("id-ID")}
-                  </Td>
-
-                  <Td>
-                    <HStack spacing="2">
-                      <Button
-                        size="xs"
-                        colorScheme="yellow"
-                        onClick={() => handleEditOutlet(o)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="xs"
-                        colorScheme="red"
-                        onClick={() => handleDeleteOutlet(o.id)}
-                      >
-                        Hapus
-                      </Button>
-                    </HStack>
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
+        <Table variant="simple" size="sm">
+  <Thead bg="blue.50">
+    <Tr>
+      <Th>Nama Toko</Th>
+      <Th>Pemilik</Th>
+      <Th>Cabang</Th>
+      <Th>Segment</Th>
+      <Th>Lokasi</Th>
+      <Th>Tanggal Dibuat</Th>
+      <Th>Aksi</Th>
+    </Tr>
+  </Thead>
+  <Tbody>
+    {outlets
+      .filter((o) => o.segment === "Wholesale")
+      .map((o) => (
+        <Tr key={o.id} _hover={{ bg: "gray.50", cursor: "pointer" }}>
+          <Td>{o.store_name}</Td>
+          <Td>{o.owner_name}</Td>
+          <Td>{o.branch_name}</Td>
+          <Td>{o.segment}</Td>
+          <Td>
+            {o.latitude && o.longitude ? (
+              <a
+                href={`https://www.google.com/maps?q=${o.latitude},${o.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "blue", textDecoration: "underline" }}
+              >
+                https://www.google.com/maps?q={o.latitude},{o.longitude}
+              </a>
+            ) : (
+              "-"
+            )}
+          </Td>
+          <Td>{new Date(o.created_at).toLocaleDateString()}</Td>
+          <Td>
+            <HStack spacing="2">
+              <Button
+                size="xs"
+                colorScheme="yellow"
+                onClick={() => handleEditOutlet(o)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="xs"
+                colorScheme="red"
+                onClick={() => handleDeleteOutlet(o.id)}
+              >
+                Hapus
+              </Button>
+            </HStack>
+          </Td>
+        </Tr>
+      ))}
+  </Tbody>
+</Table>
         </TableContainer>
       </VStack>
 
-      {/* modal */}
+      {/* Modal Tambah/Edit Outlet */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
@@ -290,7 +347,6 @@ export default function OutletsWholesalePage() {
                   onChange={(e) => setStoreName(e.target.value)}
                 />
               </FormControl>
-
               <FormControl>
                 <FormLabel>Nama Pemilik</FormLabel>
                 <Input
@@ -298,14 +354,19 @@ export default function OutletsWholesalePage() {
                   onChange={(e) => setOwnerName(e.target.value)}
                 />
               </FormControl>
-
               <FormControl>
                 <FormLabel>Cabang</FormLabel>
                 <Select
-                  value={branchId}
-                  onChange={(e) => setBranchId(Number(e.target.value))}
-                  isDisabled={user?.segment === "Admin Cabang"}
-                  placeholder="Pilih Cabang"
+                  value={branch_id}
+                  onChange={(e) => setBranch(e.target.value)}
+                  isDisabled={
+                    branchLoading ||
+                    branches.length === 0 ||
+                    user?.segment === "Admin Cabang"
+                  }
+                  placeholder={
+                    branchLoading ? "Memuat cabang..." : "Pilih Cabang"
+                  }
                 >
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -314,26 +375,32 @@ export default function OutletsWholesalePage() {
                   ))}
                 </Select>
               </FormControl>
-
               <FormControl>
                 <FormLabel>Segment</FormLabel>
                 <Select
                   value={segment}
                   onChange={(e) => setSegment(e.target.value)}
                 >
-                  <option value="Retail">Retail</option>
                   <option value="Agent">Agent</option>
+                  <option value="Retail">Retail</option>
                   <option value="Wholesale">Wholesale</option>
                 </Select>
               </FormControl>
+              <FormControl>
+                <FormLabel>Link Google Maps</FormLabel>
+                <Input
+                  placeholder="Tempel link Google Maps disini"
+                  value={mapsUrl}
+                  onChange={(e) => setMapsUrl(e.target.value)}
+                />
+              </FormControl>
             </VStack>
           </ModalBody>
-
           <ModalFooter>
             <Button
               colorScheme="blue"
-              onClick={editingOutlet ? handleUpdateOutlet : handleAddOutlet}
               mr={3}
+              onClick={editingOutlet ? handleUpdateOutlet : handleAddOutlet}
             >
               {editingOutlet ? "Update" : "Simpan"}
             </Button>
