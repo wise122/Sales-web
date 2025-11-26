@@ -133,7 +133,7 @@ export default function DiscountsPage() {
   const handleUpdate = async () => {
     if (!editingDiscount) return;
     try {
-      await api.put(`/discounts/${editingDiscount.id}`, {
+      await api.put(`/diskon/${editingDiscount.id}`, {
         product_id,
         discount_type,
         value,
@@ -155,7 +155,7 @@ export default function DiscountsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Yakin ingin menghapus diskon ini?")) return;
     try {
-      await api.delete(`/discounts/${id}`);
+      await api.delete(`/diskon/${id}`);
       toast({ title: "Diskon berhasil dihapus", status: "success", duration: 3000 });
       fetchData();
     } catch (err) {
