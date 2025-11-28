@@ -288,19 +288,6 @@ const ProductsPage: React.FC = () => {
               </NumberInput>
             </FormControl>
 
-            <FormControl mb={3}>
-              <FormLabel>Stock Akhir</FormLabel>
-              <NumberInput min={0} value={formData.stock_akhir || 0}>
-                <NumberInputField
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      stock_akhir: Number(e.target.value),
-                    })
-                  }
-                />
-              </NumberInput>
-            </FormControl>
           </ModalBody>
 
           <ModalFooter>
