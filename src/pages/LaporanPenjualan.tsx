@@ -157,19 +157,14 @@ export default function LaporanPenjualan() {
       const fetchedOrders: any[] = Array.isArray(ordersRes.data?.orders)
         ? ordersRes.data.orders
         : [];
+        console.log("Order sample:", fetchedOrders[0]);
       const outlets: any[] = Array.isArray(outletsRes.data) ? outletsRes.data : [];
       const users: any[] = Array.isArray(usersRes.data) ? usersRes.data : [];
 
-      const mappedOrders = fetchedOrders.map((o) => {
-        const outlet = outlets.find((out) => out.id === o.outlet_id);
-        const user = users.find((u) => u.id === o.user_id);
-        return {
-          ...o,
-          outlet_name: outlet?.store_name || "-",
-          sales_name: user?.name || "-",
-          order_items: o.order_items || [],
-        };
-      });
+      const mappedOrders = fetchedOrders.map((o) => ({
+        ...o,
+        order_items: o.order_items || [],
+      }));
 
       const sortedOrders = mappedOrders.sort((a, b) => a.id - b.id);
       setOrders(sortedOrders);
@@ -217,17 +212,6 @@ export default function LaporanPenjualan() {
         <Input type="date" value={filters.start} onChange={(e) => setFilters({ ...filters, start: e.target.value })} />
         <Input type="date" value={filters.end} onChange={(e) => setFilters({ ...filters, end: e.target.value })} />
 
-        <Select placeholder="Bulan" value={filters.month} onChange={(e) => setFilters({ ...filters, month: e.target.value })} w="120px">
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </Select>
-
-        <Select placeholder="Tahun" value={filters.year} onChange={(e) => setFilters({ ...filters, year: e.target.value })} w="120px">
-          {["2023", "2024", "2025"].map((y) => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </Select>
 
         <Button colorScheme="blue" onClick={fetchOrders} isLoading={loading}>Filter</Button>
         <Button
