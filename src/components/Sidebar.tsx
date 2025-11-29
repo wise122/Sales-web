@@ -14,17 +14,17 @@ import {
   FiUsers,
   FiMapPin,
   FiPercent,
-  FiGift,
   FiChevronDown,
   FiChevronUp,
   FiLogOut,
-  FiFileText, // ✅ icon laporan
+  FiFileText,
 } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router-dom";
 
 type SubMenuItem = {
   label: string;
   path: string;
+  allowSegment?: string[];
 };
 
 type MenuItem = {
@@ -37,18 +37,19 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { label: "Produk", icon: FiPackage, path: "/produk" },
   { label: "Master Stok", icon: FiPackage, path: "/stok" },
+
   {
     label: "Data Karyawan",
     icon: FiUsers,
     subMenu: [
-      { label: "Sales", path: "/sales" },
-      { label: "Management", path: "/management" },
-      { label: "Admin", path: "/admin" },
-      { label: "Admin Cabang", path: "/admin-cabang" },
+      { label: "Sales", path: "/sales", allowSegment: ["Admin", "Admin Cabang"] },
+      { label: "Admin", path: "/admin", allowSegment: ["Admin"] },
+      { label: "Admin Cabang", path: "/admin-cabang", allowSegment: ["Admin"] },
     ],
   },
+
   {
-    label: "Data Toko",
+    label: "Outlet",
     icon: FiMapPin,
     subMenu: [
       { label: "Agent", path: "/toko/agent" },
@@ -56,38 +57,38 @@ const menuItems: MenuItem[] = [
       { label: "Retail", path: "/toko/retail" },
     ],
   },
+
   { label: "Cabang", icon: FiMapPin, path: "/cabang" },
   { label: "Set Discount", icon: FiPercent, path: "/diskon" },
-  //{ label: "Set Bonus", icon: FiGift, path: "/set-bonus" },
 
-  // ✅ Menu baru Asset/Inventaris
   {
     label: "Asset/Inventaris",
     icon: FiPackage,
     subMenu: [
-      { label: "Asset", path: "/asset" },            // list + crud asset
-      { label: "Kategori Asset", path: "/kategori-asset" }, // crud kategori
+      { label: "Asset", path: "/asset" },
+      { label: "Kategori Asset", path: "/kategori-asset" },
     ],
   },
 
-  // ✅ Menu Laporan
   {
     label: "Laporan",
     icon: FiFileText,
-    subMenu: [
-      { label: "Penjualan", path: "/laporan-penjualan" },
-    ],
+    subMenu: [{ label: "Penjualan", path: "/laporan-penjualan" }],
   },
 ];
-
 
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
 
+  // Ambil user segment dari localStorage
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userSegment: string | undefined = user.segment;
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
     navigate("/login");
   };
 
@@ -104,7 +105,7 @@ export default function Sidebar() {
       flexDirection="column"
       justifyContent="space-between"
     >
-      {/* Menu utama */}
+      {/* Header */}
       <Box>
         <Text fontSize="2xl" fontWeight="bold" mb="6" textAlign="center">
           Pusantara
@@ -112,12 +113,21 @@ export default function Sidebar() {
 
         <VStack spacing="2" align="stretch">
           {menuItems.map((item) => {
+            const hasSubMenu = !!item.subMenu;
+
+            // FILTER subMenu untuk Data Karyawan
+            let filteredSubMenu = item.subMenu;
+            if (item.label === "Data Karyawan") {
+              filteredSubMenu = item.subMenu?.filter((sub) => {
+                if (!sub.allowSegment) return true; // default: tampil semua
+                return userSegment && sub.allowSegment.includes(userSegment);
+              });
+            }
+
             const isActive =
               item.path && location.pathname === item.path
                 ? true
-                : item.subMenu?.some((sub) => sub.path === location.pathname);
-
-            const hasSubMenu = !!item.subMenu;
+                : filteredSubMenu?.some((sub) => sub.path === location.pathname);
 
             return (
               <Box key={item.label}>
@@ -138,14 +148,10 @@ export default function Sidebar() {
                       navigate(item.path);
                     }
                   }}
-                  transition="all 0.2s"
+                  transition="0.2s"
                 >
                   <Icon as={item.icon} boxSize={5} />
-                  <Text
-                    fontWeight={isActive ? "bold" : "medium"}
-                    flex="1"
-                    noOfLines={1}
-                  >
+                  <Text fontWeight={isActive ? "bold" : "medium"} flex="1">
                     {item.label}
                   </Text>
                   {hasSubMenu && (
@@ -159,9 +165,9 @@ export default function Sidebar() {
 
                 {/* Submenu */}
                 {hasSubMenu && (
-                  <Collapse in={!!(openSubMenu === item.label)} animateOpacity>
+                  <Collapse in={openSubMenu === item.label}>
                     <VStack spacing="1" align="stretch" pl="8" mt="1">
-                      {item.subMenu!.map((sub) => {
+                      {filteredSubMenu?.map((sub) => {
                         const isSubActive = location.pathname === sub.path;
                         return (
                           <HStack
@@ -172,13 +178,9 @@ export default function Sidebar() {
                             bg={isSubActive ? "blue.50" : "transparent"}
                             _hover={{ bg: "blue.100" }}
                             onClick={() => navigate(sub.path)}
-                            transition="all 0.2s"
+                            transition="0.2s"
                           >
-                            <Text
-                              fontSize="sm"
-                              fontWeight="medium"
-                              noOfLines={1}
-                            >
+                            <Text fontSize="sm" fontWeight="medium">
                               {sub.label}
                             </Text>
                           </HStack>
@@ -193,7 +195,7 @@ export default function Sidebar() {
         </VStack>
       </Box>
 
-      {/* Logout section */}
+      {/* Footer Logout */}
       <Box>
         <Divider my="4" />
         <Button
