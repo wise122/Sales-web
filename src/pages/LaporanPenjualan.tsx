@@ -264,8 +264,10 @@ export default function LaporanPenjualan() {
       <Th isNumeric>Harga</Th>
       <Th isNumeric>Subtotal</Th>
       <Th isNumeric>Grand Total</Th>
+      <Th>Aksi</Th> {/* ➕ Tambahan */}
     </Tr>
   </Thead>
+
   <Tbody>
     {orders.length > 0 ? (
       orders.flatMap((order) => {
@@ -277,11 +279,29 @@ export default function LaporanPenjualan() {
               <Td>{index === 0 ? order.outlet_name : ""}</Td>
               <Td>{index === 0 ? order.sales_name : ""}</Td>
               <Td>{index === 0 ? order.payment_method : ""}</Td>
+
               <Td>{item.product_name}</Td>
               <Td isNumeric>{item.quantity}</Td>
               <Td isNumeric>Rp {item.price.toLocaleString()}</Td>
               <Td isNumeric>Rp {(item.quantity * item.price).toLocaleString()}</Td>
-              <Td isNumeric>{index === 0 ? `Rp ${order.grand_total.toLocaleString()}` : ""}</Td>
+
+              <Td isNumeric>
+                {index === 0 ? `Rp ${order.grand_total.toLocaleString()}` : ""}
+              </Td>
+
+              {/* Tombol Edit hanya muncul di baris pertama order */}
+              <Td>
+                {index === 0 && (
+                  <Button
+                    size="xs"
+                    colorScheme="blue"
+                    onClick={() => navigate(`/laporan-penjualan/${order.id}`)}
+
+                  >
+                    Edit
+                  </Button>
+                )}
+              </Td>
             </Tr>
           ));
         } else {
@@ -292,24 +312,38 @@ export default function LaporanPenjualan() {
               <Td>{order.outlet_name}</Td>
               <Td>{order.sales_name}</Td>
               <Td>{order.payment_method}</Td>
+
               <Td>-</Td>
               <Td isNumeric>0</Td>
               <Td isNumeric>0</Td>
               <Td isNumeric>0</Td>
               <Td isNumeric>Rp {order.grand_total.toLocaleString()}</Td>
+
+              <Td>
+                <Button
+                  size="xs"
+                  colorScheme="blue"
+                  onClick={() => navigate(`/orders/edit/${order.id}`)}
+                >
+                  Edit
+                </Button>
+              </Td>
             </Tr>
           );
         }
       })
     ) : (
       <Tr>
-        <Td colSpan={10}>
-          <Text textAlign="center" color="gray.500">Belum ada data penjualan</Text>
+        <Td colSpan={11}>
+          <Text textAlign="center" color="gray.500">
+            Belum ada data penjualan
+          </Text>
         </Td>
       </Tr>
     )}
   </Tbody>
 </Table>
+
 
       )}
     </Box>
