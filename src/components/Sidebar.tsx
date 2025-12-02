@@ -42,9 +42,9 @@ const menuItems: MenuItem[] = [
     label: "Data Karyawan",
     icon: FiUsers,
     subMenu: [
-      { label: "Sales", path: "/sales", allowSegment: ["Admin", "Admin Cabang"] },
-      { label: "Admin", path: "/admin", allowSegment: ["Admin"] },
-      { label: "Admin Cabang", path: "/admin-cabang", allowSegment: ["Admin"] },
+      { label: "Sales", path: "/sales", allowSegment: ["Admin", "Admin Cabang","Super Admin"] },
+      { label: "Admin", path: "/admin", allowSegment: ["Admin","Super Admin"] },
+      { label: "Admin Cabang", path: "/admin-cabang", allowSegment: ["Admin","Super Admin"] },
     ],
   },
 
